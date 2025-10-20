@@ -1,49 +1,57 @@
-# Starlight Starter Kit: Basics
+# Build a coding agent in a day with Semantic Kernel and C#
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+## Goal for the workshop
 
-```
-npm create astro@latest -- --template starlight
-```
+In this workshop you'll learn how to use Semantic Kernel to build a coding
+agent. By the end of this workshop you know the inner workings of coding agents
+as well as how to build effective LLM-based applications in C#.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Target audience
 
-## 🚀 Project Structure
+This workshop is meant for C# developers. There is no need to understand 
+how LLMs work ahead of time. I'll explain in the workshop.
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+## Table of contents 
 
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
-```
+- **Building the core of the coding agent:** This module teaches you how to 
+  setup a new project in Semantic Kernel and helps you set up the core loop
+  for the agent.
+- **Adding tools and testing the agent:** In this module you'll learn how to
+  build tools for your agent and test the agent without interacting with the
+  LLM.
+- **Adding observability and TODO items:** This module teaches you how to make
+  your agent more observable and how to add memory to allow the agent to solve
+  more complex tasks.
+- **Including support for long-term memory:** In the final module for the 
+  workshop you'll learn how to add long-term memory to the agent.
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+## Bonus modules
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+Because this first edition of the workshop is only one day, I can't include
+everything you'd need to build an agent. Consider the following two modules
+a bonus to the core workshop that will take your agent to the next level.
 
-Static assets, like favicons, can be placed in the `public/` directory.
+- **Adding support for custom instructions and prompts:** The combination of
+  custom instructions and custom prompts help your agent to better handle
+  complex programming tasks without the need for lengthy user prompts. This
+  module explains how to add both to the coding agent.
+- **Adding support for MCP servers:** If you've managed to make custom
+  instructions and prompts work, then you should definitely look at adding
+  support for MCP servers. They add another layer of useful utilities to fix
+  some of the short-comings of the more basic coding agent.
 
-## 🧞 Commands
+## Structure of the modules
 
-All commands are run from the root of the project, from a terminal:
+The workshop starts with a theoretical piece in which I explain the concepts
+we'll work on in the labs. The slides for each section are included in the
+website for the workshop. 
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+After explaining the theory, you can try it out with real code in your own
+copy of the coding agent. The website includes instructions and references
+to the manual. The solution is also included in the workshop modules.
 
-## 👀 Want to learn more?
+## Contributing to this workshop
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+As with all my personal workshops, this one's free and open source. I love
+getting feedback and help fixing issues in the workshop. So if you find anything
+missing or broken, please let me know.
