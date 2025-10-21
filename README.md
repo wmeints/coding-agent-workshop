@@ -13,42 +13,29 @@ how LLMs work ahead of time. I'll explain in the workshop.
 
 ## Table of contents 
 
-- **Building the core of the coding agent:** This module teaches you how to 
-  setup a new project in Semantic Kernel and helps you set up the core loop
-  for the agent.
-- **Adding tools and testing the agent:** In this module you'll learn how to
-  build tools for your agent and test the agent without interacting with the
-  LLM.
-- **Adding observability and TODO items:** This module teaches you how to make
-  your agent more observable and how to add memory to allow the agent to solve
-  more complex tasks.
-- **Including support for long-term memory:** In the final module for the 
-  workshop you'll learn how to add long-term memory to the agent.
+- **Module 1: Setup and introduction:** In the first module we'll explore LLMs
+  and how to create the project structure for the coding agent.
 
-## Bonus modules
+- **Building the core of the coding agent:** In this module we'll look at
+  core agent loop and the base instructions for the agent.
 
-Because this first edition of the workshop is only one day, I can't include
-everything you'd need to build an agent. Consider the following two modules
-a bonus to the core workshop that will take your agent to the next level.
+- **Giving the agent tools to work with:** This module covers how to build the
+  necessary plugins and tools for the agent to be able to edit code.
 
-- **Adding support for custom instructions and prompts:** The combination of
-  custom instructions and custom prompts help your agent to better handle
-  complex programming tasks without the need for lengthy user prompts. This
-  module explains how to add both to the coding agent.
-- **Adding support for MCP servers:** If you've managed to make custom
-  instructions and prompts work, then you should definitely look at adding
-  support for MCP servers. They add another layer of useful utilities to fix
-  some of the short-comings of the more basic coding agent.
+- **Adding task memory:** In this module we'll look at adding task memory and
+  how to get debugging information from the agent using opentelemetry.
+
+- **Including support for MCP servers:** In the final module, we'll look at
+  using MCP servers to extend the functionality of the coding agent.
 
 ## Structure of the modules
 
-The workshop starts with a theoretical piece in which I explain the concepts
-we'll work on in the labs. The slides for each section are included in the
-website for the workshop. 
+Each module features a short presentation explaining the concepts before you
+start building code in the lab. The slides are included in the website so you
+can review them on your own pace.
 
-After explaining the theory, you can try it out with real code in your own
-copy of the coding agent. The website includes instructions and references
-to the manual. The solution is also included in the workshop modules.
+I've included a completed sample for each of the modules so you can skip ahead
+if you get stuck on a module.
 
 ## Contributing to this workshop
 
