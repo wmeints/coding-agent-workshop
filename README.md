@@ -1,6 +1,6 @@
 # Coding Agent Workshop
 
-![Logo](./src/assets/coding-agent-workshop.png)
+![Logo](./src/assets/coding-agent-banner.png)
 
 ------
 
