@@ -1,0 +1,150 @@
+---
+title: Introduction to Semantic Kernel
+description: A quick introduction to Semantic Kernel and how it relates to building a coding agent.
+---
+
+import { Card } from '@astrojs/starlight/components';
+
+In this section we'll introduce Semantic Kernel and how it helps you build 
+LLM-based applications. We'll cover why it exists, the key concepts, and how to
+get started using it in your .NET applications.
+
+## Why Was Semantic Kernel Invented?
+
+Semantic Kernel is a lightweight, open-source development kit created by 
+Microsoft to address the challenges of integrating LLM capabilities into 
+enterprise applications. It was designed to serve as efficient middleware that 
+enables rapid delivery of enterprise-grade AI solutions.
+
+The library was born from several key needs:
+
+- **Automating Business Processes**: Organizations needed a way to combine AI 
+  prompts with existing APIs to perform automated actions. Semantic Kernel acts 
+  as the middleware that translates AI model requests into function calls and
+  passes results back to the model.
+
+- **Future-Proofing AI Integrations**: As AI models evolve rapidly, companies
+  needed a solution that would allow them to swap out models without rewriting
+  their entire codebase. Semantic Kernel provides this flexibility by
+  abstracting the AI service layer.
+
+- **Enterprise Readiness**: Microsoft and Fortune 500 companies required a
+  solution that was flexible, modular, and observable, with security-enhancing
+  capabilities like telemetry support, hooks, and filters for responsible AI at
+  scale.
+
+## Key Concepts
+
+### The Kernel
+
+The kernel is the central orchestration component in Semantic Kernel. It serves
+as a container that manages:
+
+- **AI Services**: Chat completion, text generation, embeddings, and other AI capabilities
+- **Plugins**: Your custom functions and integrations that the AI can call
+- **Memory**: Conversation history and context storage
+- **Configuration**: Logging, telemetry, and other enterprise services
+
+Think of the kernel as the "brain" that coordinates between AI models and your
+application code, enabling the AI to understand what functions are available and
+when to call them.
+
+We'll use the Kernel component extensively in the agent code. As we build out
+the coding agent, we'll also explore plugins and memory and to a lesser extent
+the observability and other enterprise features.
+
+### Multi-Provider Support
+
+Semantic Kernel supports multiple AI providers out of the box, allowing you to:
+
+- Use **Azure OpenAI**, **OpenAI**, or other compatible services
+- Switch between providers without changing your application logic
+- Work with different models for different tasks
+- Easily adapt as new AI models and services are released
+
+This provider-agnostic approach means you're not locked into a single vendor 
+and can take advantage of the latest AI capabilities as they become available.
+
+For the workshop we'll use Azure AI Foundry services, but you can use your own
+OpenAI or Azure OpenAI keys if you prefer.
+
+### Extensibility Through Plugins
+
+Plugins are the mechanism through which AI agents can interact with your code
+and external systems. Plugins are often implemented as C# classses with methods
+that implement tools the agent can use.
+
+You're not required to build your own plugins. You can also connect to existing
+tools using MCP (Model Context Protocol) servers. We'll cover MCP in more detail
+in the final module of the workshop.
+
+## Installing Semantic Kernel in .NET
+
+Getting started with Semantic Kernel in a .NET application is straightforward:
+
+### 1. Install the NuGet Package
+
+The primary package you need for most scenarios is `Microsoft.SemanticKernel`:
+
+```bash
+dotnet add package Microsoft.SemanticKernel
+```
+
+This package includes support for connecting to Azure OpenAI and OpenAI services.
+You can also add support for other provideers:
+
+| Provider         | Package Name                                    |
+|------------------|-------------------------------------------------|
+| OpenAI           | Microsoft.SemanticKernel.Connectors.OpenAI      |
+| Azure OpenAI     | Microsoft.SemanticKernel.Connectors.AzureOpenAI |
+| Ollama           | Microsoft.SemanticKernel.Connectors.Ollama      |
+| Hugging Face     | Microsoft.SemanticKernel.Connectors.HuggingFace |
+| Google           | Microsoft.SemanticKernel.Connectors.Google      |
+| Anthropic/Amazon | Microsoft.SemanticKernel.Connectors.Amazon      |
+
+### 3. Create and Configure the Kernel
+
+Here's a minimal example to get you started:
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+
+// Create a kernel builder
+var builder = Kernel.CreateBuilder();
+
+// Add an AI service (example with Azure OpenAI)
+builder.AddAzureOpenAIChatCompletion(
+    modelId: "your-model-id",
+    endpoint: "your-endpoint",
+    apiKey: "your-api-key"
+);
+
+// Add logging for debugging
+builder.Services.AddLogging(services => 
+    services.AddConsole().SetMinimumLevel(LogLevel.Trace));
+
+// Build the kernel
+Kernel kernel = builder.Build();
+```
+
+### 4. Start Using the Kernel
+
+Once configured, you can retrieve services from the kernel and start building AI-powered features:
+
+```csharp
+var chatService = kernel.GetRequiredService<IChatCompletionService>();
+
+// Start using the AI agent
+var history = new ChatHistory();
+history.AddUserMessage("Hello!");
+
+// Generate a response
+var response = await chatService.GetChatMessageContentAsync(
+    history, 
+    kernel: kernel
+);
+```
+
+That's all you need to start building AI agents with Semantic Kernel in your .NET applications!

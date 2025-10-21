@@ -1,0 +1,209 @@
+---
+title: Introduction to LLMs
+description: A quick introduction to large language models and how they relate to agents
+---
+
+import { Card } from '@astrojs/starlight/components';
+
+In this section we'll provide a brief introduction to Large Language Models 
+(LLMs), if you have experience working with LLMs you can skip this section.
+
+Large Language Models (LLMs) are a type of artificial intelligence model that 
+can understand and generate human-like text. To understand what an LLM is, it 
+helps to see where they fit in the broader AI landscape.
+
+## Relationship between AI, Machine Learning, and Large Language Models
+
+AI isn't just about using a machine to interpret and generate text or images.
+There's much more to it. Let's explore the relationship between AI,
+Machine Learning, Deep Learning, and Large Language Models.
+
+- **Artificial Intelligence (AI)**: The broadest category, encompassing any 
+  technique that enables computers to mimic human intelligence. Note that it
+  only has to look intelligent for it to be AI. 
+
+- **Machine Learning (ML)**: A subset of AI where systems learn patterns from 
+  data without being explicitly programmed. We use statistical learning
+  algorithms to build models of reality. With ML we can recognize patterns and
+  provide output based on that pattern. For example, we can recognize when an
+  email is likely a spam email.
+
+- **Deep Learning (DL)**: A subset of ML using neural networks with multiple
+  layers to learn more complex patterns. Neural networks are often used for 
+  recognizing text in images, analyzing audio, and systems like self-driving
+  cars. Neural networks can be small for simpler tasks and very large for
+  complex tasks like the self-driving cars we mentioned.
+
+- **Transformers**: A specific deep learning architecture that revolutionized
+  natural language processing. All large language models are based on this
+  architecture. 
+
+## The Transformer Architecture
+
+Transformers, introduced in 2017, are the foundation of modern LLMs. They're a
+specific type of neural network model that is capable of generating text, but
+can also be used in time-series prediction, generating images, and even video
+content. 
+
+To understand the power of these models we need to break down the transformer
+architecture into its individual pieces. For this explanation we'll focus on 
+generating text.
+
+### How the transform generates output
+
+A transformer model is a type of sequence to sequence model with some powerful
+addons. Let's first discuss the sequence to sequence model aspect. 
+
+![]()
+
+The diagram demonstrates the conceptual structure of a transformer model. The
+model is made out of three distinct blocks: The input encoding, the transformer
+itself, and the output decoder.
+
+When we feed the transformer text, we have to feed it the text token by token.
+Basically, we grab the input text, and chop it up into chunks that make sense
+for the model, and then translate these chunks into vector representations.
+
+<Card title="Why use tokens and vectors?">
+We're trying to teach a machine to understand language. Fundamental to language
+is the idea that words have meaning that you can derive from the context.
+For humans, this is easy because we have brains that can understand context, 
+semantics, and syntax. We can relate what we read to our own cultural context 
+and what our parents taught us. This is quite hard for a machine. So we have to 
+find a representation of language on the most basic level. 
+
+The vectors we translate words into are mathematical representations of meaning.
+The idea is that words that are similar in meaning will have similar vector
+representations. Thanks to these vectors, the machine knows the relationship
+between doctor and pill for example.
+</Card>
+
+Every time we give the transformer a token, it predicts the next likely token.
+As long as we're feeding it tokens from the input, we can discard the predictions.
+
+Once we've fully processed the input, the next token is a useful output token.
+We can take this output token and store it as part of the output sequence. Then,
+we feed this output token back into the transformer to get the next output token.
+
+We'll have to repeat this process until we reach a stopping condition. Usually
+this is a special "end of sequence" token or when we reach a maximum output
+length.
+
+Your coding agent relies on the sequence to sequence approach to generate code.
+When you provide input to your agent it produces output token by token, from
+patterns it was trained on.
+
+This means that it the quality of the code it generates is directly related to
+the quality of the training data it has seen!
+
+### Addons that make the transformer architecture powerful
+
+The sequence to sequence model is a good start, but not good enough on its own.
+The transformer architecture introduced several key innovations that made it
+much more powerful and useful for coding purposes.
+
+Key innovations include:
+
+- **Self-Attention Mechanism**: Allows the model to weigh the importance of 
+  different words in relation to each other, regardless of their position in 
+  the text
+- **Parallel Processing**: Unlike previous sequential models, transformers 
+  process all words simultaneously, making training much faster
+- **Positional Encoding**: Maintains information about word order without
+  processing sequentially
+
+These three mechanisms work together to allow modern LLMs to understand 
+increasingly complex patterns in things like source code and specifications
+to help generate higher quality output. Especially in smaller tasks.
+
+### About modern LLMs
+
+Developments in LLM space are moving extremely fast. The most recent LLMs still
+use the transformer architecture, but have introduced even more innovations to
+improve performance, reduce bias, and increase safety. Some of these innovations
+include:
+
+- **Reinforcement Learning from Human Feedback (RLHF)**: A training technique
+  that uses human feedback to fine-tune model behavior, making outputs more
+  aligned with human values and preferences
+- **Mixture of Experts (MoE)**: An architecture that uses multiple specialized
+  sub-models (experts) to handle different types of inputs, improving efficiency
+  and performance
+- **Sparse Attention Mechanisms**: Techniques that reduce the computational load
+  of attention mechanisms, allowing models to scale more effectively. This
+  innovation makes it possible to build models that can handle input up to
+  millions of tokens long.
+
+Innovations like mixture of experts and sparse attention are particularly important for
+coding agents, as they allow models to handle much larger contexts. This means
+that coding agents can understand larger codebases and more complex specifications.
+
+## Reasoning with LLMs
+
+One area that is important to coding is reasoning. Modern LLMs are being trained
+to solve problems in a step-by-step fashion. The approach is much the same as with
+basic sequence to sequence generation, but the models have been trained to generate
+intermediate steps before generating the final answer. 
+
+### How Reasoning Works
+
+- **Pattern Matching**: LLMs recognize patterns from their training data that resemble logical reasoning steps
+- **Chain-of-Thought**: When prompted appropriately (or trained specifically), LLMs can break down complex problems into intermediate steps
+- **Contextual Understanding**: Models maintain context across a conversation, allowing them to build upon previous information
+- **Emergent Abilities**: Larger models demonstrate reasoning capabilities that smaller models don't exhibit, suggesting that scale contributes to reasoning
+
+It's important to note that LLM "reasoning" is fundamentally different from 
+human reasoning. LLMs don't truly understand concepts—they predict text patterns
+that appear to demonstrate understanding. Recent models like OpenAI's gpt-5 use
+reinforcement learning to improve reasoning by "thinking" before generating
+responses.
+
+By letting an LLM generate a sequence with intermediate steps, it generates a
+better pattern for itself to produce the final answer. Often this leads to a 
+much better final answer. But it takes more time, and power, and is more costly.
+
+<Card title="Is this real reasoning?">
+To be honest with you: It's still a model that generates a sequence, but thanks
+to training and scale it can generate sequences that look like reasoning. It's
+not real.
+</Card>
+
+## Dangers and Limitations of LLMs
+
+While powerful, LLMs have significant limitations that developers must understand:
+
+### LLMs Don't Generate Facts
+
+- **Statistical Output**: LLMs generate text based on statistical likelihood, not truth or factual accuracy
+- **Hallucinations**: Models can confidently produce false information that sounds plausible but is completely fabricated
+- **No Knowledge Cutoff Awareness**: Models don't know what they don't know and may provide outdated information
+- **No Source Verification**: Unlike search engines, LLMs don't cite sources or verify claims against databases
+
+### Potential for Dangerous Output
+
+- **Bias and Stereotypes**: Models can reproduce and amplify biases present in
+  their training data. For example, it will generate stackoverflow quality code.
+  Which you may or may not like.
+- **Harmful Content**: Without proper safeguards, LLMs may generate offensive,
+  discriminatory, or dangerous content. For example, for coding agents this may
+  mean generating code that breaks your machine.
+- **Misinformation**: The persuasive nature of LLM output can make false
+  information particularly harmful. For example, your agent may convince you
+  that a certain library is the best for your use case, while in reality it's
+  not.
+- **Malicious Use**: LLMs can be exploited to generate spam, phishing content,
+  or manipulative text. For coding agents this may mean generating code that is
+  vulnerable to attacks.
+
+### Best Practices for Developers
+
+- **Verification**: Always verify factual claims from LLMs using reliable sources
+- **Human Oversight**: Implement human review for critical applications
+- **Safety Measures**: Use content filtering, prompt engineering, and model fine-tuning to prevent harmful outputs
+- **Transparency**: Be clear with users when they're interacting with AI-generated content
+- **Grounding**: Use retrieval-augmented generation (RAG) to ground responses in verified data sources
+
+Understanding these limitations is crucial for building responsible AI agents 
+that leverage LLMs effectively while minimizing risks. Throughout the workshop
+we'll highlight best practices to help you build a safe and effective coding 
+agent.
