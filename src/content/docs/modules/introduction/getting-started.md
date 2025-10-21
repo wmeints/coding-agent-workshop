@@ -19,6 +19,8 @@ You'll need the following software on your computer:
 - [.NET 9 SDK](https://dot.net)
 - [Visual Studio Code](https://code.visualstudio.com/), [Visual Studio](https://visualstudio.microsoft.com/), or [Rider](https://www.jetbrains.com/rider/)
 
+## Download the sources
+
 Make sure you download the sources for the repository. Execute the following
 command on your computer to get the sources for the workshop:
 
