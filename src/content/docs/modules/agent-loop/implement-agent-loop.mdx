@@ -3,6 +3,77 @@ title: Implement the core agent loop
 description: This tutorial teaches you how to implement the core agent loop from scratch.
 ---
 
+import { Card } from '@astrojs/starlight/components';
+
 In this section, we'll explore the agent loop and how to implement it from
 scratch. We'll also explain alternatives to building your own agent loop so you
 can make an informed decision for your use case.
+
+## What is an agent loop and how does it work?
+
+### Using an LLM as a chat bot
+
+Remember how an LLM can generate a response based on input. Modern LLMs are
+trained as chat bots, which means they are designed to handle multi-turn
+conversations with users. In fact, there's no other way to talk to an LLM 
+than through a conversation.
+
+When you build a chatbot, you typically send a prompt to the server as part of
+the conversation and then display the response to the user.
+
+You can extend this behavior by introducing tools. When you submit a user prompt,
+you can include a list of tools the LLM can use to answer the prompt. The 
+LLM will then decide whether it can answer the prompt directly or if it needs
+to use one of the tools. If it decides to use a tool, it will generate a
+special response of type `tool_call` and return it to the client.
+
+It's up to you, as a developer, to detect the `tool_call` response, execute
+the tool mentioned in the response, and send the result of the tool execution
+back to the LLM. The LLM will then continue processing the conversation, now
+with the result of the tool execution included. This process can repeat
+multiple times, with the LLM deciding to use more tools as needed, until it
+generates a final answer.
+
+### Using an LLM as an agent
+
+When building a chatbot, you typically stop the loop when you receive a text
+response. However, when building an agent, you want to keep the loop going until
+the agent has completed its task. 
+
+**The big question here:** How do you know when the agent has completed its
+task? There are multiple strategies to determine when to stop the agent loop:
+
+- **Fixed number of iterations:** You can set a maximum number of iterations
+  for the agent loop. Once the agent reaches this limit, it stops processing
+  further tool calls and returns the final answer. This approach is simple to
+  implement but may not always guarantee task completion.
+
+- **Task completion signal:** You can design the agent to recognize specific
+  signals or keywords in the LLM's response that indicate task completion. For
+  example, the agent could be programmed to stop when it generates a response
+  containing phrases like "Task completed" or "Final answer". This approach
+  requires careful prompt engineering to ensure the LLM understands when to
+  signal completion.
+
+- **Using a specialized tool:** You can create a dedicated tool that the agent
+  can call to signal task completion. If you create the tool with the proper
+  instructions, the LLM will call the tool when it believes the task is done.
+
+<Card title="We'll get back to tools, Promise!">
+Don't worry if you're not familiar with tools yet. We'll cover them in greater
+detail in the next module, so hang tight!
+</Card>
+
+For the workshop, we'll use two strategies to determine when to stop the agent loop:
+
+1. We'll set a maximum number of iterations to prevent infinite loops. This is
+   a failsafe mechanism to ensure we never have to kill the process to stop 
+   the agent.
+2. We'll implement a specialized tool called `final_output` that the agent can
+   call to signal task completion.
+
+Let's get started implementing the agent loop!
+
+## Implementing the agent loop
+
+//TODO: Explain the steps required to create the main agent loop.
