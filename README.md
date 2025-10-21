@@ -1,5 +1,12 @@
 # Build a coding agent in a day with Semantic Kernel and C#
 
+------
+
+**IMPORTANT:** This is the source version of the workshop. Please visit the
+website to start the workshop: https://coding-agent-workshop.vercel.app/
+
+------
+
 ## Goal for the workshop
 
 In this workshop you'll learn how to use Semantic Kernel to build a coding
@@ -11,7 +18,7 @@ as well as how to build effective LLM-based applications in C#.
 This workshop is meant for C# developers. There is no need to understand 
 how LLMs work ahead of time. I'll explain in the workshop.
 
-## Table of contents 
+## Workshop contents
 
 - **Module 1: Setup and introduction:** In the first module we'll explore LLMs
   and how to create the project structure for the coding agent.
@@ -27,15 +34,6 @@ how LLMs work ahead of time. I'll explain in the workshop.
 
 - **Including support for MCP servers:** In the final module, we'll look at
   using MCP servers to extend the functionality of the coding agent.
-
-## Structure of the modules
-
-Each module features a short presentation explaining the concepts before you
-start building code in the lab. The slides are included in the website so you
-can review them on your own pace.
-
-I've included a completed sample for each of the modules so you can skip ahead
-if you get stuck on a module.
 
 ## Contributing to this workshop
 
