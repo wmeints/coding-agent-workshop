@@ -1,4 +1,6 @@
-# Build a coding agent in a day with Semantic Kernel and C#
+# Coding Agent Workshop
+
+![Logo](./src/assets/coding-agent-workshop.png)
 
 ------
 
