@@ -53,6 +53,15 @@ export default defineConfig({
 						{ label: "Integrating Plugins into the Agent", slug: "modules/tools/integrating-plugins-into-agent" },
 						{ label: "Testing the agent with tools", slug: "modules/tools/testing-agent-with-tools" },
 					]
+				},
+				{
+					label: "Task Memory",
+					items: [
+						{ label: "Overview", slug: "modules/task-memory/overview" },
+						{ label: "Implement custom instructions", slug: "modules/task-memory/custom-instructions" },
+						{ label: "Build the task memory plugin", slug: "modules/task-memory/task-memory-plugin" },
+						{ label: "Testing", slug: "modules/task-memory/testing" },
+					]
 				}
 			],
 		}),

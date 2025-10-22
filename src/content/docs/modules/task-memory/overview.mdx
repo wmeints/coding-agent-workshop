@@ -1,0 +1,75 @@
+---
+title: Overview
+description: Learn how to improve agent performance through context engineering with custom instructions and task memory.
+---
+
+Welcome to the task memory module! In this module, you'll learn how to enhance
+your coding agent's capabilities through context engineering. By the end of
+this module you'll know:
+
+- How context engineering improves agent performance and reliability
+- How to provide custom instructions to the agent using AGENTS.md
+- How to implement task memory with TODO items to help agents adhere to plans
+- How to test custom instructions and task memory components
+
+## What is context engineering?
+
+Context engineering is the practice of providing structured information to an
+LLM to improve its decision-making and task execution. While tools extend what
+an agent *can* do, context engineering improves *how well* it does those things.
+
+There are two main types of context we can provide:
+
+1. **Custom Instructions**: Static guidance that shapes the agent's overall behavior
+2. **Task Memory**: Dynamic state that helps the agent track progress and maintain focus
+
+Together, these techniques dramatically improve an agent's ability to complete
+complex, multi-step tasks.
+
+## Custom instructions with AGENTS.md
+
+Custom instructions allow users to personalize their agent's behavior. By
+reading an `AGENTS.md` file from the working directory, we can provide the
+agent with:
+
+- Preferred coding styles and conventions
+- Project-specific guidelines
+- Domain knowledge about the codebase
+- User preferences for communication style
+
+This approach is inspired by tools like Claude Code and Cursor, which use
+similar conventions to allow users to customize agent behavior per-project.
+
+## Task memory and TODO tracking
+
+One of the biggest challenges with LLM-based agents is keeping them focused on
+multi-step plans. Task memory helps solve this by:
+
+- Breaking complex tasks into discrete TODO items
+- Tracking completion status of each step
+- Providing the agent with a clear view of what's done and what remains
+- Reducing the chance of the agent forgetting or skipping steps
+
+We'll implement a `TaskMemoryPlugin` that allows the agent to:
+- Create TODO lists for complex tasks
+- Mark items as in-progress or completed
+- Query the current state of the TODO list
+
+## Architecture integration
+
+![Agent Architecture - Task Memory components highlighted in blue](../../../../assets/agent-architecture-step-3.png)
+
+The components we'll build in this module integrate directly with the `CodingAgent` class:
+
+- `AgentInstructions`: Reads and parses AGENTS.md files
+- `TaskMemoryPlugin`: Manages TODO items and provides task memory tools
+
+## What we'll build in this module
+
+We'll implement context engineering through three focused labs:
+
+1. [Implement custom instructions with AGENTS.md](/modules/task-memory/custom-instructions)
+2. [Build the task memory plugin](/modules/task-memory/task-memory-plugin)
+3. [Test custom instructions and task memory](/modules/task-memory/testing)
+
+Let's start by implementing custom instructions!

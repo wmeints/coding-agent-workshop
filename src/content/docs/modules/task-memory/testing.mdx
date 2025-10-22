@@ -1,0 +1,155 @@
+---
+title: Testing Custom Instructions and Task Memory
+description: Learn how to write comprehensive tests for custom instructions and task memory components.
+---
+
+import { Steps, Card } from '@astrojs/starlight/components';
+
+In this lab, you'll write unit tests for both the `AgentInstructions` class and the `TaskMemoryPlugin`. Testing these components ensures they work correctly and makes it easier to refactor later.
+
+## Lab setup
+
+- **Starter code**: `labs/task-memory/testing/start`
+- **Solution**: `labs/task-memory/testing/solution`
+
+## Testing AgentInstructions
+
+<Steps>
+
+1. **Create the test class**
+
+   Create a new test class `AgentInstructionsTests` using your preferred testing framework (xUnit, NUnit, etc.).
+
+2. **Test reading existing AGENTS.md file**
+
+   Write a test that:
+   - Creates a temporary directory
+   - Writes a sample `AGENTS.md` file
+   - Changes the current directory to the temp directory
+   - Calls `GetInstructions()`
+   - Asserts the returned content matches what was written
+   - Cleans up the temp directory
+
+   You'll need to manage `Environment.CurrentDirectory` carefully. Consider saving the original directory and restoring it in a finally block or using a fixture.
+
+3. **Test handling missing AGENTS.md file**
+
+   Write a test that verifies the method handles missing files gracefully:
+   - Create a temporary directory without an `AGENTS.md` file
+   - Call `GetInstructions()`
+   - Assert it returns an empty string or null without throwing
+
+4. **Test error handling**
+
+   Consider edge cases like:
+   - File exists but is locked
+   - File exists but user lacks read permissions
+   - File contains invalid characters
+
+</Steps>
+
+<Card title="Testing file system interactions">
+File system tests can be tricky because they involve external state. Consider using temporary directories (Path.GetTempPath()) and cleaning up in test teardown methods. Some teams prefer using file system abstractions and mocking, but for this workshop, real file I/O tests are fine.
+</Card>
+
+## Testing TaskMemoryPlugin
+
+<Steps>
+
+1. **Create the test class**
+
+   Create `TaskMemoryPluginTests` to test the TODO functionality.
+
+2. **Test creating a TODO list**
+
+   Write a test that:
+   - Creates a new `TaskMemoryPlugin` instance
+   - Calls `CreateTodoList()` with sample tasks
+   - Calls `GetTodoList()` to verify the tasks were created
+   - Asserts all tasks have status `Pending`
+
+3. **Test updating TODO status**
+
+   Write a test that:
+   - Creates a TODO list
+   - Updates one item to `InProgress`
+   - Verifies the status changed
+   - Updates the same item to `Completed`
+   - Verifies it's now completed
+
+4. **Test todo list retrieval**
+
+   Write a test that verifies `GetTodoList()` returns a well-formatted string with:
+   - All TODO items
+   - Their current status
+   - A clear, readable format
+
+5. **Test edge cases**
+
+   Consider testing:
+   - Updating a non-existent TODO item
+   - Creating an empty TODO list
+   - Creating a TODO list when one already exists
+
+</Steps>
+
+## Integration testing
+
+<Steps>
+
+1. **Test the full agent with task memory**
+
+   Create an integration test that:
+   - Sets up a complete `CodingAgent` with the `TaskMemoryPlugin`
+   - Gives it a multi-step task
+   - Verifies it creates a TODO list
+   - Checks that it updates TODO status as it works
+
+   This test might be more complex and slower, but it verifies the components work together correctly.
+
+2. **Test custom instructions integration**
+
+   Write an integration test that:
+   - Creates an `AGENTS.md` file with specific instructions
+   - Initializes the agent
+   - Gives it a task where the custom instructions should apply
+   - Verifies the agent follows the custom instructions
+
+   For example, if `AGENTS.md` says "Always respond in Spanish", verify the agent's responses are in Spanish.
+
+</Steps>
+
+## Running and validating tests
+
+<Steps>
+
+1. **Run all tests**
+
+   Execute your test suite using `dotnet test` and verify all tests pass.
+
+2. **Check test coverage**
+
+   Consider using a code coverage tool to ensure you're testing the critical paths through your code.
+
+3. **Review test quality**
+
+   Ask yourself:
+   - Are my tests isolated and independent?
+   - Do they test one thing each?
+   - Are they readable and maintainable?
+   - Do they cover edge cases?
+
+</Steps>
+
+## Summary
+
+You've written comprehensive tests for both custom instructions and task memory! These tests provide confidence that your components work correctly and will catch regressions if you modify the code later.
+
+Congratulations on completing the task memory module! Your coding agent now has:
+- Custom instruction support via `AGENTS.md`
+- Task memory with TODO tracking
+- Comprehensive test coverage
+
+These capabilities significantly improve the agent's ability to handle complex, multi-step coding tasks.
+
+**Solution**: `labs/task-memory/testing/solution`

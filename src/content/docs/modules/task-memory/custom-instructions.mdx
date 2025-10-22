@@ -1,0 +1,84 @@
+---
+title: Implement Custom Instructions with AGENTS.md
+description: Learn how to read and apply custom instructions from AGENTS.md files.
+---
+
+import { Steps, Card } from '@astrojs/starlight/components';
+
+In this lab, you'll implement the `AgentInstructions` class that reads custom instructions from an `AGENTS.md` file in the user's working directory. These instructions will be included in the agent's system prompt to customize its behavior.
+
+## Lab setup
+
+- **Starter code**: `labs/task-memory/custom-instructions/start`
+- **Solution**: `labs/task-memory/custom-instructions/solution`
+
+## Understanding the requirements
+
+The `AgentInstructions` class should:
+
+1. Check if an `AGENTS.md` file exists in the working directory
+2. Read the contents of the file if it exists
+3. Return the instructions as a string to be included in the system prompt
+4. Handle cases where the file doesn't exist gracefully
+
+This simple but powerful pattern allows users to customize agent behavior per-project without modifying code.
+
+## Creating the AgentInstructions class
+
+<Steps>
+
+1. **Create the AgentInstructions class**
+
+   Create a new class `AgentInstructions` in the appropriate location. The class should have a method `GetInstructions()` that returns the custom instructions as a string.
+
+2. **Check for AGENTS.md file existence**
+
+   Use `File.Exists()` to check if an `AGENTS.md` file exists in the current working directory. You'll need to construct the full path using `Path.Combine()` with `Environment.CurrentDirectory`.
+
+3. **Read the file contents**
+
+   If the file exists, use `File.ReadAllTextAsync()` to read its contents. Make your method async to support this.
+
+4. **Handle missing files gracefully**
+
+   If the file doesn't exist, return an empty string or null. The agent should work fine without custom instructions.
+
+5. **Add error handling**
+
+   Wrap file I/O operations in try-catch blocks to handle potential exceptions like permission issues or file locks.
+
+</Steps>
+
+## Integrating with the CodingAgent
+
+<Steps>
+
+1. **Update the system prompt**
+
+   Modify the `CodingAgent` class to use `AgentInstructions` when building the system prompt. If custom instructions exist, append them to the base system prompt.
+
+2. **Consider prompt structure**
+
+   Think about how to structure the prompt. You might want to use a section header like "## Custom Instructions" to clearly delineate user-provided guidance.
+
+3. **Test with a sample AGENTS.md**
+
+   Create a sample `AGENTS.md` file in your project root with some simple instructions (e.g., "Always use C# coding conventions") and verify they appear in the agent's behavior.
+
+</Steps>
+
+<Card title="Best practices for AGENTS.md">
+Consider documenting the AGENTS.md format for users. Include examples of effective custom instructions, such as:
+- Coding style preferences
+- Framework-specific conventions
+- Domain terminology
+- Communication preferences
+</Card>
+
+## Summary
+
+You've now implemented custom instructions! The agent can read user-specific guidance from `AGENTS.md` and incorporate it into its system prompt. This allows each project to have tailored agent behavior.
+
+In the next lab, we'll implement task memory to help the agent track multi-step plans.
+
+**Solution**: `labs/task-memory/custom-instructions/solution`

@@ -1,0 +1,124 @@
+---
+title: Build the Task Memory Plugin
+description: Implement a task memory system using TODO items to improve plan adherence.
+---
+
+import { Steps, Card } from '@astrojs/starlight/components';
+
+In this lab, you'll build the `TaskMemoryPlugin` that enables the agent to create, update, and track TODO items. This dramatically improves the agent's ability to complete complex multi-step tasks.
+
+## Lab setup
+
+- **Starter code**: `labs/task-memory/task-memory-plugin/start`
+- **Solution**: `labs/task-memory/task-memory-plugin/solution`
+
+## Understanding task memory
+
+Task memory works by giving the agent tools to:
+
+1. **Create TODO lists**: Break complex tasks into steps
+2. **Update TODO status**: Mark items as in-progress or completed
+3. **Query current state**: Review what's done and what remains
+
+This external memory helps compensate for the LLM's tendency to lose track of multi-step plans.
+
+## Designing the data model
+
+<Steps>
+
+1. **Create a TodoItem class**
+
+   Define a class to represent individual TODO items. Consider what properties you need:
+   - `Id`: Unique identifier
+   - `Description`: What needs to be done
+   - `Status`: Pending, InProgress, or Completed
+   - `CreatedAt`: When the item was created
+
+2. **Create a TodoStatus enum**
+
+   Define an enum for the possible states: `Pending`, `InProgress`, `Completed`
+
+3. **Create a TaskMemory class**
+
+   This class will manage the collection of TODO items in memory. It should store a list of `TodoItem` objects and provide methods to manipulate them.
+
+</Steps>
+
+## Implementing the TaskMemoryPlugin
+
+<Steps>
+
+1. **Create the plugin class**
+
+   Create a `TaskMemoryPlugin` class that will contain the kernel functions. Inject or create a `TaskMemory` instance to store the TODO items.
+
+2. **Implement create_todo_list function**
+
+   Create a `[KernelFunction]` that accepts a list of TODO items (as strings) and creates a new TODO list. This should:
+   - Clear any existing TODOs (or append, depending on your design)
+   - Create new `TodoItem` objects with status `Pending`
+   - Return a confirmation message
+
+   ```csharp
+   [KernelFunction("create_todo_list")]
+   [Description("Creates a TODO list to track multi-step tasks")]
+   public string CreateTodoList([Description("List of tasks to complete")] string[] tasks)
+   {
+       // Implementation here
+   }
+   ```
+
+3. **Implement update_todo_status function**
+
+   Create a function to update the status of a specific TODO item. It should accept:
+   - `todoId`: The identifier of the TODO item
+   - `status`: The new status (pending, in_progress, completed)
+
+   Use snake_case for parameter names to match LLM training data.
+
+4. **Implement get_todo_list function**
+
+   Create a function that returns the current state of all TODO items. This helps the agent understand what's been done and what remains.
+
+   Consider formatting the output clearly, perhaps as a numbered list with status indicators.
+
+5. **Add the plugin to the kernel**
+
+   Update your `CodingAgent` class to register the `TaskMemoryPlugin` with the kernel.
+
+</Steps>
+
+## Enhancing the system prompt
+
+<Steps>
+
+1. **Instruct the agent to use TODO lists**
+
+   Update the system prompt to encourage the agent to create TODO lists for multi-step tasks. For example:
+
+   ```
+   For complex tasks with multiple steps, create a TODO list using the
+   create_todo_list tool. Update the status as you complete each item.
+   ```
+
+2. **Include current TODO state**
+
+   Consider including the current TODO list in each iteration of the agent loop. This keeps the agent aware of progress.
+
+3. **Test the behavior**
+
+   Give the agent a complex multi-step task and observe whether it creates and maintains a TODO list.
+
+</Steps>
+
+<Card title="Advanced: Persistence">
+For this workshop, we're using in-memory storage for TODO items. In a production system, you might persist TODO items to a database or file so they survive agent restarts.
+</Card>
+
+## Summary
+
+You've implemented a task memory system! The agent can now create TODO lists, track progress, and maintain focus on multi-step plans. This is a powerful technique for improving agent reliability.
+
+Next, we'll write tests to ensure our custom instructions and task memory work correctly.
+
+**Solution**: `labs/task-memory/task-memory-plugin/solution`
