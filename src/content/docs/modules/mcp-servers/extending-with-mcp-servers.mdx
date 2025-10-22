@@ -1,0 +1,205 @@
+---
+title: Extending the application with MCP server support
+description: Learn how to configure your coding agent to load and connect to MCP servers.
+---
+
+import { Steps, Card } from '@astrojs/starlight/components';
+
+In this lab, you'll extend your coding agent to support Model Context Protocol (MCP)
+servers. You'll implement a configuration system that allows users to specify which
+MCP servers to load, and build the infrastructure to connect to those servers.
+
+## Lab files
+
+- [Starter code](../../../../labs/mcp-servers/extending-with-mcp-servers/start)
+- [Solution code](../../../../labs/mcp-servers/extending-with-mcp-servers/solution)
+
+## Understanding MCP configuration
+
+Before we start building, let's understand how users will configure MCP servers.
+Your agent will read a configuration file named `mcp.json` from the `.agent`
+directory in the user's workspace.
+
+This configuration file will specify which MCP servers to load and how to connect
+to them. Here's an example:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Each server entry includes:
+- A unique name (the key in the `mcpServers` object)
+- The `command` to execute (often `npx` for Node.js-based servers)
+- Arguments for the command (`args`)
+- Optional environment variables (`env`) for configuration like API keys
+
+<Card title="Security Note">
+Environment variables in the configuration can reference system environment variables
+using the `${VAR_NAME}` syntax. This prevents storing secrets directly in the
+configuration file.
+</Card>
+
+## Creating the configuration model
+
+First, you'll need to create C# classes to represent the MCP configuration.
+
+<Steps>
+
+1. Create a new directory called `Configuration` in your project.
+
+2. Add a class `McpServerConfig.cs` to represent a single server's configuration.
+
+   This class should have properties for:
+   - Command (string)
+   - Args (array of strings)
+   - Env (dictionary of string to string)
+
+3. Add a class `McpConfiguration.cs` to represent the overall configuration file.
+
+   This class should have:
+   - A dictionary mapping server names to `McpServerConfig` objects
+   - Methods to load the configuration from a file
+   - Logic to resolve environment variable references (e.g., `${GITHUB_TOKEN}`)
+
+4. Implement a method to load the configuration from the `mcp.json` file.
+
+   The method should:
+   - Check if the `.agent/mcp.json` file exists
+   - Deserialize the JSON into your configuration model
+   - Resolve environment variable references in the `env` section
+   - Handle errors gracefully if the file doesn't exist or is malformed
+
+</Steps>
+
+## Building the MCP client infrastructure
+
+Next, you'll create the infrastructure to connect to MCP servers using the
+configuration you just defined.
+
+<Steps>
+
+1. Install the MCP C# SDK package.
+
+   Add the `ModelContextProtocol` NuGet package to your project:
+
+   ```bash
+   dotnet add package ModelContextProtocol
+   ```
+
+2. Create an `McpClientManager` class to manage connections to MCP servers.
+
+   This class should:
+   - Accept an `McpConfiguration` in its constructor
+   - Maintain a collection of connected MCP clients
+   - Provide methods to initialize and connect to all configured servers
+
+3. Implement a method to create and connect to a single MCP server.
+
+   For each server in the configuration:
+   - Create a process to run the server command with the specified arguments
+   - Set up the environment variables from the configuration
+   - Create an MCP client that communicates with the server via stdio
+   - Initialize the connection and perform capability negotiation
+
+4. Add error handling for connection failures.
+
+   If a server fails to connect:
+   - Log the error with details about which server failed
+   - Continue connecting to other servers (don't fail the entire agent)
+   - Track which servers connected successfully
+
+5. Implement a cleanup method to gracefully disconnect from all servers.
+
+   This method should:
+   - Send shutdown signals to connected servers
+   - Wait for processes to exit cleanly
+   - Dispose of client resources properly
+
+</Steps>
+
+## Integrating configuration loading into the agent
+
+Now that you have the configuration and client infrastructure, integrate it into
+your agent application.
+
+<Steps>
+
+1. Update your agent's initialization code to check for MCP configuration.
+
+   When the agent starts:
+   - Look for `.agent/mcp.json` in the current workspace
+   - Load the configuration if it exists
+   - Log a message indicating how many servers will be loaded
+
+2. Create and initialize the `McpClientManager` during agent startup.
+
+   After loading the configuration:
+   - Instantiate the `McpClientManager` with the loaded configuration
+   - Call the initialization method to connect to all servers
+   - Store the manager instance for use by the agent loop
+
+3. Add proper disposal of MCP connections when the agent shuts down.
+
+   In your agent's cleanup code:
+   - Call the cleanup method on the `McpClientManager`
+   - Ensure all server processes are terminated
+   - Log any errors during shutdown
+
+4. Test your implementation with a sample MCP server.
+
+   Create a simple `mcp.json` file with a test server and verify:
+   - The configuration loads correctly
+   - The client manager connects successfully
+   - Error messages are clear if configuration is invalid
+   - The agent starts and stops cleanly
+
+</Steps>
+
+## Testing your implementation
+
+While we're not writing comprehensive unit tests in this lab, you should manually
+test your implementation:
+
+1. Create a `.agent/mcp.json` file with a simple MCP server (like the filesystem server)
+2. Run your agent and verify it loads the configuration
+3. Check the logs to confirm successful connection
+4. Try an invalid configuration and verify error handling
+5. Stop the agent and verify clean shutdown
+
+<Card title="Tip: Local MCP servers">
+For testing, you can use the official MCP filesystem server:
+```bash
+npx @modelcontextprotocol/server-filesystem /tmp
+```
+This provides a safe way to test without needing API keys or external services.
+</Card>
+
+## Summary
+
+In this lab, you've built the foundation for MCP server support in your coding agent:
+
+- Created a configuration model for MCP servers
+- Implemented client infrastructure to connect to servers
+- Integrated configuration loading into your agent
+- Added proper error handling and cleanup
+
+Your agent can now load and connect to MCP servers, but it doesn't yet use the
+tools they provide. In the next lab, we'll integrate these servers into the core
+agent loop so the LLM can discover and use their capabilities.
+
+[Solution code](../../../../labs/mcp-servers/extending-with-mcp-servers/solution) is
+available if you need help or want to compare your implementation.

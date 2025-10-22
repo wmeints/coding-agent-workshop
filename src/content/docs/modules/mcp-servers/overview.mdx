@@ -1,0 +1,156 @@
+---
+title: Overview
+description: Provides an overview of the Model Context Protocol (MCP) and how to integrate MCP servers into your coding agent.
+---
+
+import { Card } from '@astrojs/starlight/components';
+
+In this module, we'll learn how to extend the coding agent with MCP servers to
+provide additional capabilities and context. By the end of the module you'll know:
+
+- What the Model Context Protocol (MCP) is and what value it brings to coding agents
+- Security considerations when using MCP servers
+- What the basic structure of an MCP server in .NET looks like
+- How to integrate MCP servers into your agent application
+
+![Agent MCP Architecture - Items implemented in this module are highlighted in blue](../../../../assets/agent-architecture-step-5.png)
+
+## What is the Model Context Protocol?
+
+The Model Context Protocol (MCP) is a standardized protocol designed to facilitate
+communication between AI models and external services. It provides a structured way
+to exchange context, data, and capabilities between your agent and specialized servers.
+
+Think of MCP servers as plugins that extend your agent's capabilities beyond what
+you build directly into your application. Instead of implementing every tool yourself,
+you can leverage MCP servers built by others or create specialized servers for
+specific domains.
+
+### Value for coding agents
+
+MCP servers bring several key benefits to coding agents:
+
+**Modularity and reusability:** Instead of building every capability into your main
+agent, you can distribute functionality across multiple MCP servers. This makes your
+agent more maintainable and allows you to reuse servers across different projects.
+
+**Specialized capabilities:** MCP servers can provide deep integration with specific
+tools, platforms, or data sources. For example, an MCP server could provide specialized
+access to GitHub APIs, Azure DevOps, or a company's internal systems.
+
+**Community ecosystem:** The MCP protocol is becoming a standard, which means you can
+leverage servers built by the community. This accelerates development and allows you
+to focus on your agent's core logic rather than reimplementing integrations.
+
+**Dynamic tool discovery:** MCP servers expose their capabilities through a standard
+interface. Your agent can discover available tools at runtime and make them available
+to the LLM without hardcoding each integration.
+
+### How MCP works with your agent
+
+When your agent connects to an MCP server, it can:
+
+1. **Discover available tools** - The server advertises what tools it provides
+2. **Execute tools** - The agent can call these tools and receive structured responses
+3. **Access resources** - Some servers provide access to data or context
+4. **Handle prompts** - Servers can provide specialized prompts for specific tasks
+
+The agent acts as an MCP client, maintaining connections to one or more MCP servers
+throughout its lifecycle. When the LLM decides to use a tool provided by an MCP
+server, your agent orchestrates the communication between the LLM and the server.
+
+## Security considerations
+
+When working with MCP servers, security is paramount. Here are key considerations:
+
+**Trust boundaries:** MCP servers run as separate processes and can execute arbitrary
+code. Only use MCP servers from trusted sources, and review the code if possible
+before deploying them.
+
+**Sandboxing:** Consider running MCP servers in isolated environments or containers
+to limit the potential damage if a server is compromised or misbehaves.
+
+**Configuration security:** MCP servers often require configuration like API keys,
+connection strings, or credentials. Store these securely and never commit them to
+version control. Use environment variables or secure configuration stores.
+
+**Input validation:** Even though MCP is a structured protocol, always validate
+inputs and outputs. Don't assume that a server will always return well-formed data.
+
+**Network security:** If MCP servers communicate over the network, ensure connections
+are encrypted and authenticated. The MCP protocol supports both local stdio-based
+communication and remote connections.
+
+**User permissions:** Consider what permissions your agent should have when calling
+MCP servers. Not all users should have access to all servers or all tools within
+a server.
+
+<Card title="Security Best Practices">
+Always review MCP server configurations and only enable servers that are necessary
+for your use case. Start with minimal permissions and add more as needed.
+</Card>
+
+## Basic structure of an MCP server in .NET
+
+While we won't build an MCP server in this workshop, it's helpful to understand
+the basic structure. This knowledge helps you understand how to configure and
+integrate servers effectively.
+
+### Core components
+
+An MCP server in .NET typically consists of:
+
+**Server implementation:** A class that implements the MCP server protocol. The
+official C# SDK provides base classes that handle protocol details.
+
+```csharp
+using ModelContextProtocol.Server;
+
+public class MyMcpServer : McpServer
+{
+    public MyMcpServer() : base("my-server", "1.0.0")
+    {
+    }
+}
+```
+
+**Tool definitions:** Tools are defined as methods with attributes describing their
+purpose and parameters. This is similar to how you define Semantic Kernel plugins.
+
+```csharp
+[McpTool("search_documentation")]
+[Description("Searches product documentation for relevant information")]
+public async Task<ToolResult> SearchDocumentation(
+    [Description("The search query")] string query)
+{
+    // Implementation here
+    return new ToolResult { Content = "Search results..." };
+}
+```
+
+**Resource providers:** Some servers expose resources (like files or data) that the
+agent can access.
+
+**Transport layer:** MCP servers can communicate via stdio (standard input/output) or
+over network protocols. The stdio approach is common for locally installed servers.
+
+### Server lifecycle
+
+1. **Initialization:** The server starts and initializes its capabilities
+2. **Capability negotiation:** The client (your agent) connects and discovers available tools
+3. **Tool execution:** The agent sends requests to execute tools as needed
+4. **Shutdown:** The server cleanly shuts down when the client disconnects
+
+For detailed information on building MCP servers in .NET, refer to the
+[official Microsoft guide](https://devblogs.microsoft.com/dotnet/build-a-model-context-protocol-mcp-server-in-csharp/).
+
+## What we'll build in this module
+
+In the next sections, we'll extend your coding agent to support MCP servers:
+
+1. [Extending the application with MCP server support](/modules/mcp-servers/extending-with-mcp-servers) -
+   Configure your agent to load and connect to MCP servers via a configuration file.
+2. [Integrating MCP servers in the agent loop](/modules/mcp-servers/integrating-mcp-servers) -
+   Update the core agent loop to discover and use tools from MCP servers.
+
+Let's get started by adding MCP server support to the application!

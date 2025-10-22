@@ -62,6 +62,14 @@ export default defineConfig({
 						{ label: "Build the task memory plugin", slug: "modules/task-memory/task-memory-plugin" },
 						{ label: "Testing", slug: "modules/task-memory/testing" },
 					]
+				},
+				{
+					label: "MCP Servers",
+					items: [
+						{ label: "Overview", slug: "modules/mcp-servers/overview" },
+						{ label: "Extending with MCP server support", slug: "modules/mcp-servers/extending-with-mcp-servers" },
+						{ label: "Integrating MCP servers in the agent loop", slug: "modules/mcp-servers/integrating-mcp-servers" },
+					]
 				}
 			],
 		}),
