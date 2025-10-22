@@ -3,8 +3,9 @@ title: Workshop overview
 description: Information about the structure of the workshop
 ---
 
-Let's talk about the contents and structure of the workshop. In this workshop
-we cover most of the basics needed to build your own coding agent.
+In this workshop we cover most of the basics needed to build your own 
+coding agent. The workshop contains 5 modules that will help you build the
+various pieces of your coding agent.
 
 ## Workshop modules
 

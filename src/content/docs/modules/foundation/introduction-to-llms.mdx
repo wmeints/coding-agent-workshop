@@ -3,7 +3,7 @@ title: Introduction to LLMs
 description: A quick introduction to large language models and how they relate to agents
 ---
 
-import { Card } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
 
 In this section we'll provide a brief introduction to Large Language Models 
 (LLMs), if you have experience working with LLMs you can skip this section.
@@ -54,7 +54,7 @@ generating text.
 A transformer model is a type of sequence to sequence model with some powerful
 addons. Let's first discuss the sequence to sequence model aspect. 
 
-![]()
+<Aside type="caution">**TODO:** Add diagram explaining the transformer architecture</Aside>
 
 The diagram demonstrates the conceptual structure of a transformer model. The
 model is made out of three distinct blocks: The input encoding, the transformer
@@ -64,7 +64,7 @@ When we feed the transformer text, we have to feed it the text token by token.
 Basically, we grab the input text, and chop it up into chunks that make sense
 for the model, and then translate these chunks into vector representations.
 
-<Card title="Why use tokens and vectors?">
+<Aside title="Why use tokens and vectors?">
 We're trying to teach a machine to understand language. Fundamental to language
 is the idea that words have meaning that you can derive from the context.
 For humans, this is easy because we have brains that can understand context, 
@@ -76,7 +76,7 @@ The vectors we translate words into are mathematical representations of meaning.
 The idea is that words that are similar in meaning will have similar vector
 representations. Thanks to these vectors, the machine knows the relationship
 between doctor and pill for example.
-</Card>
+</Aside>
 
 Every time we give the transformer a token, it predicts the next likely token.
 As long as we're feeding it tokens from the input, we can discard the predictions.
@@ -162,11 +162,11 @@ By letting an LLM generate a sequence with intermediate steps, it generates a
 better pattern for itself to produce the final answer. Often this leads to a 
 much better final answer. But it takes more time, and power, and is more costly.
 
-<Card title="Is this real reasoning?">
+<Aside title="Is this real reasoning?">
 To be honest with you: It's still a model that generates a sequence, but thanks
 to training and scale it can generate sequences that look like reasoning. It's
 not real.
-</Card>
+</Aside>
 
 ## Dangers and Limitations of LLMs
 
