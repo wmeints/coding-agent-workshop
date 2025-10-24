@@ -1,20 +1,20 @@
- main figure {
+ main figure.captioned-image {
      display: flex;
      flex-direction: column;
      align-items: center;
      margin: 1rem 0;
  }
 
- main picture {
+ main figure.captioned-image picture {
      display: block;
  }
 
- main img {
+ main figure.captioned-image img {
      display: block;
      margin-inline: auto;
  }
 
- main figcaption {
+ main figure.captioned-image figcaption {
      margin-top: 0.5rem;
      color: var(--sl-color-gray-3);
      font-size: 0.875rem;
