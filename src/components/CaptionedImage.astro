@@ -1,0 +1,32 @@
+---
+import { Image, getImage } from "astro:assets";
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  darkSrc?: ImageMetadata;
+}
+
+const { src, alt, darkSrc } = Astro.props;
+
+let lightImage, darkImage;
+
+if (darkSrc) {
+  lightImage = await getImage({ src });
+  darkImage = await getImage({ src: darkSrc });
+}
+---
+
+<figure>
+  {
+    darkSrc ? (
+      <picture>
+        <source srcset={darkImage?.src} media="(prefers-color-scheme: dark)" />
+        <img src={lightImage?.src} alt={alt} />
+      </picture>
+    ) : (
+      <Image src={src} alt={alt} />
+    )
+  }
+  <figcaption>{alt}</figcaption>
+</figure>

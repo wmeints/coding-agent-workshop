@@ -4,6 +4,8 @@ description: A quick introduction to large language models and how they relate t
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import CaptionedImage from '../../../../components/CaptionedImage.astro';
+import transformerArchitecture from '../../../../assets/transformer-architecture.png';
 
 In this section we'll provide a brief introduction to Large Language Models 
 (LLMs), if you have experience working with LLMs you can skip this section.
@@ -54,7 +56,11 @@ generating text.
 A transformer model is a type of sequence to sequence model with some powerful
 addons. Let's first discuss the sequence to sequence model aspect. 
 
-![Transformer architecture](../../../../assets/transformer-architecture.png)
+
+<CaptionedImage
+      src={transformerArchitecture}
+      alt="Transformer architecture diagram showing input projection to vectors, transformer block, and output projection"
+/>
 
 The diagram demonstrates the conceptual structure of a transformer model. The
 model is made out of three distinct blocks: The input encoding, the transformer

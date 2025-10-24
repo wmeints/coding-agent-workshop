@@ -1,4 +1,22 @@
-main img {
-    display: block;
-    margin-inline: auto;
-}
+ main figure {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     margin: 1rem 0;
+ }
+
+ main picture {
+     display: block;
+ }
+
+ main img {
+     display: block;
+     margin-inline: auto;
+ }
+
+ main figcaption {
+     margin-top: 0.5rem;
+     color: var(--sl-color-gray-3);
+     font-size: 0.875rem;
+     text-align: center;
+ }
