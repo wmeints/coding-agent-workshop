@@ -70,6 +70,13 @@ export default defineConfig({
 						{ label: "Extending with MCP server support", slug: "modules/mcp-servers/extending-with-mcp-servers" },
 						{ label: "Integrating MCP servers in the agent loop", slug: "modules/mcp-servers/integrating-mcp-servers" },
 					]
+				},
+				{
+					label: "Conclusion",
+					items: [
+						{ label: "Finished!", slug: "modules/conclusion/finished" },
+						{ label: "Next Steps", slug: "modules/conclusion/next-steps" },
+					]
 				}
 			],
 		}),
