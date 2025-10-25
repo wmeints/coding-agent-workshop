@@ -7,6 +7,11 @@ Welcome to the workshop! Today you'll learn how to build a coding agent with C#
 and Semantic Kernel. By the end of the workshop you'll have a working agent
 you can use on our own code!
 
+My ultimate goal is to help you understand what agents are and how they work. 
+Agents are useful in a lot of places, but I figured that since you're a developer
+that it would make the most sense to learn how to build one you can use for
+coding tasks.
+
 Before we start with the workshop, review the system requirements below and make
 sure you have the code and necessary tools to get started.
 

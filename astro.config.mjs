@@ -30,7 +30,7 @@ export default defineConfig({
 				{
 					label: "The Foundation",
 					items: [
-						{ label: "Introduction to LLMs", slug: "modules/foundation/introduction-to-llms" },
+						{ label: "Introduction to Agents", slug: "modules/foundation/introduction-to-agents" },
 						{ label: "Introduction to Semantic Kernel", slug: "modules/foundation/introduction-to-semantic-kernel" },
 					]
 				},

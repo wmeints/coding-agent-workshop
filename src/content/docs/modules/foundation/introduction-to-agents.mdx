@@ -1,0 +1,104 @@
+---
+title: Introduction to Agents
+description: A quick introduction to agents
+---
+
+import { Aside } from '@astrojs/starlight/components'; import CaptionedImage
+from '../../../../components/CaptionedImage.astro'; import
+transformerArchitecture from '../../../../assets/transformer-architecture.png';
+
+I think everyone agrees that the recent developments in AI have given us some
+very interesting new tools. Among them, AI agents.
+
+Although autonomous isn't completely true, you could argue that they're a lot
+more intelligent than what we've been used to.
+
+In the workshop we'll teach you how to build an agent yourself. But before you
+run off and write code, let's discuss what an agent is.
+
+## What is an agent?
+
+Defining what an agent is, can be quite challenging because there's not a very
+solid definition yet. Marketeers have a very different definition from
+developers, and data scientists have yet another definition.
+
+The way that I think about agents is this:
+
+An agent is a system that can perceive its environment through sensors and act
+upon the signals it receives using actuators. It can make decisions and perform
+tasks autonomously, often with the goal of achieving specific objectives. It can
+adapt to changes in its environment and learn from its experiences to improve
+its performance over time.
+
+We need to discuss a few details here so you know what to expect from the rest
+of the workshop, because you may get the wrong idea about the power of the agent
+we're about to build.
+
+### Agents and LLMs
+
+Agents come in a wide variety of shapes. Previously agents were build using
+neural networks and an algorithm called reinforcement learning. Since LLMs are
+super popular nobody thinks about the reinforcement learning anymore and we
+focus on LLM-based agents only calling them AI Agents. As if there's nothing
+else.
+
+It's important to know that agents today use an LLM as the core to perform tasks
+and make decisions. When you give the agent a task, it will send the task to the
+LLM along with other information and the LLM will determine what needs to happen
+next.
+
+LLMs are trained to be used as a chat bot. That's why modern agents often have a
+chat interface. But you don't have to, as long as you translate the instructions
+into a conversation. We'll do this in the coding agent too.
+
+You can give LLMs a set of tools along side your prompt to allow them to "use"
+tools. The LLM can't really use tools, but will reply with a special response
+indicating you should use a tool and send the output of the tool back to the LLM
+as part of the conversation.
+
+### Sensors and Actuators in an agent
+
+Tools are the translation of sensors and actuators in an agent. The sensors and
+actuators here cover two kinds of tools an agent can use. For example, when we
+build a tool that can read files, this is considered a sensor. When we give the
+agent a tool to write a file it's an actuator tool. Things can get fuzzy though.
+A shell is not necessarily an actuator or a sensor. It can be both.
+
+The distinction is still important. If you can manage to split the actuator
+tools from the sensor tools you can implement proper security measures to
+protect your agent against abuse.
+
+### Autonomous reasoning and acting
+
+The goal of using an agent is to give some work to the agent and not having to
+babysit it. However, the more complex the task becomes the more dangerous this
+behavior is. Agents get it wrong all the time!
+
+So while autonomous reasoning and acting is a key concept of agents I don't
+recommend letting an agent operate on its own all the time. For one, the AI act
+forbids AI programs from making decisions on their own. And second, it's just
+very dangerous.
+
+During the workshop we'll teach you how to check for permissions before running
+tools so you have an idea how to protect your agent against abuse.
+
+### Learning from experiences
+
+Agents can learn from experience. Except that we can't train the LLM that we use
+in the agent! We can only provide better instructions.
+
+The way that the agent can learn is by us updating the custom instructions for
+the agent. When you're used to Claude Code or Github Copilot you know that you
+can provide `AGENTS.md`, `CLAUDE.md`, or `copilot-instructions.md` files to
+give the agent instructions for your project.
+
+You normally write agent instructions yourself, but you can allow the agent to
+update its own instructions after completing a task to learn from the
+experience. This comes with additional risks of course that you'll need to
+manage.
+
+Another great way to improve an agent over time is to add memory to the agent.
+Basically, we'll give the agent a scratch space where it can store long-term
+information. The only challenge here is when to store new information in this
+memory, because you don't want to poison your long-term memory with invalid
+information.
