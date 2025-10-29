@@ -25,16 +25,16 @@ how LLMs work ahead of time. I'll explain in the workshop.
 - **Module 1: Setup and introduction:** In the first module we'll explore LLMs
   and how to create the project structure for the coding agent.
 
-- **Building the core of the coding agent:** In this module we'll look at
+- **Module 2: Building the core of the coding agent:** In this module we'll look at
   core agent loop and the base instructions for the agent.
 
-- **Giving the agent tools to work with:** This module covers how to build the
+- **Module 3: Giving the agent tools to work with:** This module covers how to build the
   necessary plugins and tools for the agent to be able to edit code.
 
-- **Adding task memory:** In this module we'll look at adding task memory and
+- **Module 4: Adding task memory:** In this module we'll look at adding task memory and
   how to get debugging information from the agent using opentelemetry.
 
-- **Including support for MCP servers:** In the final module, we'll look at
+- **Module 5: Including support for MCP servers:** In the final module, we'll look at
   using MCP servers to extend the functionality of the coding agent.
 
 ## Contributing to this workshop
