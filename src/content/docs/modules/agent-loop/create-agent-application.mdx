@@ -3,6 +3,149 @@ title: Create the agent application
 description: This tutorial teaches you how to create a basic agent application using Semantic Kernel.
 ---
 
-In this section, we'll create a basic terminal application that initializes
-the kernel and connects it to the Azure OpenAI Service.
+import { FileTree } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
 
+In this lab, we'll create a basic terminal application that initializes
+the kernel and connect it to the Azure OpenAI Service.
+
+## Creating the project structure
+
+Let's start by creating a new directory structure. I recommend you create
+a new directory for your coding agent. You can choose any name you like!
+I prefer to use `coding-agent`.
+
+<Steps>
+
+1. Create a new solution file `CodingAgent.sln`
+2. Create a new Console Application project `CodingAgent`
+3. Create a new xunit test project `CodingAgent.Tests`
+
+</Steps>
+
+You can use your favorite IDE or the `dotnet` CLI tool to create
+the project structure.
+
+<Aside type="tip">
+Make sure to add the project files to the solution file. It will
+make things a lot easier to work with later on.
+</Aside>
+
+Make sure you have a directory structure like this:
+
+<FileTree>
+
+- CodingAgent.sln
+- CodingAgent
+  - CodingAgent.csproj
+  - Program.cs
+- CodingAgent.Tests
+  - CodingAgent.Tests.csproj
+
+</FileTree>
+
+## Configure the project
+
+After creating the project structure, make sure you have the required
+dependencies available in the solution.
+
+<Steps>
+
+1. Add the following NuGet packages `CodingAgent` Project:
+
+   - `Microsoft.SemanticKernel`                                 
+   - `Microsoft.Extensions.Configuration.UserSecrets`           
+   - `Microsoft.Extensions.Configuration.EnvironmentVariables` 
+   - `Spectre.Console`
+
+2. Add a reference from `CodingAgent.Tests` to `CodingAgent` so we can run unit-tests
+   against the project code.
+
+</Steps>
+
+## Obtain the settings for the application
+
+Our agent has to connect to an LLM online and for that we need to make sure
+we can configure the agent. We'll use [`Microsoft.Extensions.Configuration`][EXTENSIONS_CONFIGURATION]
+for this purpose.
+
+The configuration settings will come from two sources:
+
+- Environment variables
+- User secrets
+
+We'll use user secrets to store sensitive data like the API key during
+development. Let's configure the settings.
+
+<Steps>
+
+1. Add a using statement `using Microsoft.Extensions.Configuration` to
+   the `Program.cs` file in the `CodingAgent` project.
+
+2. Create a new instance of `ConfigurationBuilder` and use the `AddUserSecrets` 
+   to configure the user-secrets source as the first source for settings. 
+
+3. Use the `AddEnvironmentVariables` method to configure environment variables
+   as the second source of settings.
+
+4. Finally, use the `Build` method to finalize the settings builder and 
+   store the result in a variable `configuration`.
+
+</Steps>
+
+<Aside type="tip">
+Make sure to check out the [Microsoft Docs][CONFIGURATION_PROVIDERS] if you 
+want to use additional configuration providers!
+</Aside>
+
+## Add the language model connection
+
+Make sure you have the API key and connection information provided at the start
+of the workshop for the next step. Perform the following steps in `Program.cs`:
+
+<Steps>
+
+1. Add a using statement for the `Microsoft.SemanticKernel` namespace.
+2. Create a new KernelBuilder instance using `Kernel.CreateBuilder()`.
+3. Use the `AddAzureOpenAIChatCompletion` method to configure the language
+   model on the `KernelBuilder` instance you just created. Make sure to use the 
+   `configuration` we created earlier to obtain the settings for the LLM.
+4. Call the `Build()` method on the `KernelBuilder` instance to create the
+   kernel for the agent. Store the result in a `kernel` variable.
+
+</Steps>
+
+Make sure to compile the `CodingAgent` project to verify that you've
+configured everything correctly.
+
+We need to configure the settings for the language model next. We're using 
+the command `dotnet user-secrets` to initialize and set user secrets. Run the
+following commands from the `CodingAgent` project directory.
+
+```bash
+dotnet user-secrets init
+dotnet user-secrets set "LanguageModel:Endpoint" "<your-endpoint>"
+dotnet user-secrets set "LanguageModel:DeploymentName" "<deployment-name>"
+dotnet user-secrets set "LanguageModel:ApiKey" "<your-api-key>"
+```
+
+<Aside type="note">
+Make sure the settings names match the ones you choose in your application.
+I typically configure as shown in the command line sample above.
+</Aside>
+
+## Summary
+
+In this lab we created the initial setup for the coding agent. We configured the 
+settings and the connection with the LLM by initializing the kernel. 
+
+You can find the final solution for this lab in 
+[labs/agent-loop/001-setup-application][SOLUTION_FILES] folder. You can use
+the solution files in case you get stuck on one of the steps.
+
+When everything works, we can move on to creating the core agent loop next!
+
+[CONFIGURATION_PROVIDERS]: https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration-providers
+[EXTENSIONS_CONFIGURATION]: https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration
+[SOLUTION_FILES]: https://github.com/wmeints/tree/main/labs/agent-loop/001-setup-application/
