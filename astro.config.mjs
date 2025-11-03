@@ -1,9 +1,42 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import { readFileSync } from 'node:fs';
 
 // https://astro.build/config
 export default defineConfig({
+	vite: {
+		plugins: [
+			{
+				name: 'line-range-import',
+				transform(code, id) {
+					const rangeMatch = id.match(/\?raw&lines=([0-9,-]+)/)
+					if (rangeMatch) {
+						const [, rangeString] = rangeMatch
+						const cleanId = id.split('?')[0]
+						const content = readFileSync(cleanId, 'utf-8')
+						const allLines = content.split('\n')
+
+						// Parse ranges like "10-20,30-35,50-60"
+						const ranges = rangeString.split(',').map(range => {
+							const [start, end] = range.split('-').map(n => parseInt(n))
+							return { start, end: end || start } // Support single line like "10"
+						})
+
+						// Extract lines for each range
+						const extractedLines = ranges.map(({ start, end }) => {
+							return allLines.slice(start - 1, end).join('\n')
+						})
+
+						// Join ranges the ranges together into one continuous block.
+						const result = extractedLines.join('\n')
+
+						return `export default ${JSON.stringify(result)}`
+					}
+				}
+			}
+		]
+	},
 	integrations: [
 		starlight({
 			title: "Build a coding agent with Semantic Kernel in a day",
@@ -24,7 +57,7 @@ export default defineConfig({
 						{ label: "Getting started", slug: "modules/introduction/getting-started" },
 						{ label: "Workshop overview", slug: "modules/introduction/workshop-overview" },
 						{ label: "Provide feedback", slug: "modules/introduction/provide-feedback" },
-						
+
 					],
 				},
 				{

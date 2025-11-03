@@ -3,7 +3,16 @@ title: Implement the core agent loop
 description: This tutorial teaches you how to implement the core agent loop from scratch.
 ---
 
-import { Card } from '@astrojs/starlight/components';
+import { Aside, Card, Code, Steps } from '@astrojs/starlight/components';
+import mainApplicationLoop from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Program.cs?raw';
+import emptyAgentStructure from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=1-2';
+import emptyAgentCallbacks from '@labs/agent-loop/002-main-agent-loop/CodingAgent/IAgentCallbacks.cs?raw&lines=1-4,6-7';
+import agentSkeleton from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=7-17,62';
+import invokeMethodSkeleton from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-20,52';
+import mainAgentLoop from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-33,51-52';
+import chatCompletionCode from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-43,51-52';
+import toolHandlingCode from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-52';
+import functionCallingMethod from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=54-61';
 
 In this section, we'll explore the agent loop and how to implement it from
 scratch. We'll also explain alternatives to building your own agent loop so you
@@ -64,7 +73,8 @@ Don't worry if you're not familiar with tools yet. We'll cover them in greater
 detail in the next module, so hang tight!
 </Card>
 
-For the workshop, we'll use two strategies to determine when to stop the agent loop:
+For the workshop, we'll use two strategies to determine when to stop the agent
+loop:
 
 1. We'll set a maximum number of iterations to prevent infinite loops. This is
    a failsafe mechanism to ensure we never have to kill the process to stop 
@@ -74,6 +84,134 @@ For the workshop, we'll use two strategies to determine when to stop the agent l
 
 Let's get started implementing the agent loop!
 
-## Implementing the agent loop
+## Create the main application interface
 
-//TODO: Explain the steps required to create the main agent loop.
+Start by modifying the `Program.cs` in the `CodingAgent` project.
+Add the following code to the end of the file:
+
+<Code code={mainApplicationLoop} title="Program.cs" lang="csharp" ins={{ range: "18-37"}}/>
+
+Let's go over this code step by step:
+
+1. First, we create a new instance of the `Agent` class. Note that it doesn't
+   exist yet, we'll create it after this exercise.
+2. Next, we print the header of the application to let the user know what they
+   started.
+3. Then, we create an endless loop in the application that will ask the user
+   for input and then run the agent unless we enter specific commands. We'll
+   expand the list of commands as we expand the functionality of the agent.
+
+The user interface will be very basic. You can of course expand this with your
+own logic if you like. We'll focus on the `Agent` class. Let's start building
+it.
+
+## Build the basic agent skeleton
+
+Before we can start building the agent loop itself, we'll need to create two
+components:
+
+<Steps>
+1. Create a new interface `IAgentCallbacks` in the `CodingAgent` project that
+   will contain the interface used by the agent to send content back to the
+   user or ask for additional input.
+
+   <Code code={emptyAgentCallbacks} title="IAgentCallbacks.cs" lang="csharp" />
+
+2. Create a new class in the `CodingAgent` project called `Agent`.
+3. Add the following using statements to the top of the class file:
+   
+   <Code code={emptyAgentStructure} title="Agent.cs" lang="csharp"/>
+
+4. Next, add the basic skeleton for the agent. This should include a field
+   to store `ChatHistory` and a field to store an instance of the `Kernel`
+   we configured in the main application.
+  
+   <Code code={agentSkeleton} title="Program.cs" lang="csharp" />
+
+8. Add a new public method to the `Agent` class with the name `InvokeAsync`. 
+   This method must return a `Task` and accept a parameter `prompt` of type 
+   `string` and a parameter `callbacks` of type `IAgentCallbacks`. 
+
+   <Code code={invokeMethodSkeleton} />
+</Steps>
+
+The `Agent` will serve as the main component where we implement the agent loop
+and connect to tools. The `IAgentCallbacks` interface is important as it will
+help us report results to the terminal and ask for more user input.
+
+## Create the content of the InvokeAsync method
+
+Now that we have the skeleton in place, it's time to write the logic
+for the `InvokeAsync` method.
+
+<Steps>
+
+1. Add the main loop to the `InvokeAsync` method. We'll use a slightly odd
+   looking `while(true)` loop that doesn't make much sense now, but we'll improve
+   this situation later.
+
+   <Code code={mainAgentLoop} lang="csharp" title="Agent.cs"/>
+
+   In the main agent loop we need to use the chat functionality of Semantic Kernel
+   to communicate with the language model. Remember, we're essentially using a chat
+   bot to build a coding agent. In Semantic Kernel you can get services like
+   `IChatCompletionService` from the kernel by calling `GetRequiredService` on it
+   with the type of service you need. 
+
+   <Aside type="tip">
+   The core of Semantic Kernel integrates a number of AI services like the chat
+   completion service we've added in the `Program.cs` file and used here.
+   Check out the [Microsoft Docs][SK_SERVICES] to learn more about how AI services
+   like the chat completion service work.
+   </Aside>
+
+2. In the main loop, invoke the chat completion service to get a response to
+   the user prompt. You can use the `GetChatMessageContentAsync` method for this.
+
+   <Code code={chatCompletionCode} lang="csharp" title="Agent.cs" ins={ { range: "17-25"}}/>
+
+   This code uses a set of prompt execution settings. These settings control how the 
+   language model and Semantic Kernel behave when getting a response from the language model.
+
+   Semantic Kernel uses `FunctionChoiceBehavior` to control how tools are invoked. You can
+   set this setting to `None` to prevent tool calls. You can also set it to `Auto` so that
+   all tools are available. For the agent, we're going to have to set the behavior so that
+   all tools are available, but not invoked. We will handle the invocation ourselves.
+
+   After calling the language model, we need to save the response to the chat history. This
+   is important, as without it the next call to the language model will need the response
+   to make sense of what we're doing.
+
+3. For the agent to be able to code, we'll need to handle tool calls. Let's add this
+   code to the agent loop next.
+
+   <Code code={toolHandlingCode} lang="csharp" title="Agent.cs" ins={{range: "27-32"}}/>
+
+4. The `HandleFunctionCalls` method is responsible for calling functions and reporting
+   results. We're not going to report results in this lab, but we need to add the function
+   calling logic:
+
+   <Code code={functionCallingMethod} lang="csharp" title="Agent.cs" />
+
+   This code will iterate over the function calls detected by the language model and
+   execute them one-by-one, reporting the result as a chat message. 
+</Steps>
+
+With the skeleton in place we can start chatting to the agent. Note that you can't 
+see what the agent is doing unless you run the agent with a debugger attached.
+
+## Implement the final output tool
+
+A key component is still missing. We need to give the agent a good way to end its turn 
+when implementing code. Right now, we're checking for a maximum number of iterations, but 
+this causes the agent to continue working even when it completes its work in less iterations.
+
+We need to add our first tool to the agent, called the final output tool. This tool will
+allow the agent to signal the application that it is done. 
+
+In Semantic Kernel you can use plugins to provide tools to agents. We're going to build
+a `SharedToolsPlugin` class to implement the final output tool.
+
+//TODO: Add steps for final output tool
+
+[SK_SERVICES]: https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/
