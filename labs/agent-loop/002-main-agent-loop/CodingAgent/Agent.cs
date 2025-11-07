@@ -1,3 +1,4 @@
+using CodingAgent.Plugins;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
@@ -9,11 +10,14 @@ public class Agent
   private const int MaxIterations = 50;
   private ChatHistory _chatHistory;
   private readonly Kernel _kernel;
+  private readonly SharedToolsPlugin _sharedToolsPlugin;
 
   public Agent(Kernel kernel)
   {
     _chatHistory = new ChatHistory();
     _kernel = kernel;
+    _sharedToolsPlugin = new SharedToolsPlugin();
+    _kernel.Plugins.AddFromObject(_sharedToolsPlugin);
   }
 
   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
@@ -22,6 +26,7 @@ public class Agent
     var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
     _chatHistory.AddUserMessage(prompt);
+    _sharedToolsPlugin.Reset();
     
     while (true)
     {
@@ -47,6 +52,11 @@ public class Agent
       if (functionCalls.Any())
       {
         await HandleFunctionCalls(functionCalls);
+
+        if (_sharedToolsPlugin.TaskCompleted)
+        {
+          break;
+        }
       }
     }
   }
