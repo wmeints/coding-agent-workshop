@@ -3,22 +3,13 @@ title: Implement the core agent loop
 description: This tutorial teaches you how to implement the core agent loop from scratch.
 ---
 
-import { Aside, Card, Code, Steps } from '@astrojs/starlight/components';
-import mainApplicationLoop from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Program.cs?raw';
-import emptyAgentStructure from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=1-2';
-import emptyAgentCallbacks from '@labs/agent-loop/002-main-agent-loop/CodingAgent/IAgentCallbacks.cs?raw&lines=1-4,6-7';
-import agentSkeleton from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=7-17,62';
-import invokeMethodSkeleton from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-20,52';
-import mainAgentLoop from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-33,51-52';
-import chatCompletionCode from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-43,51-52';
-import toolHandlingCode from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=19-52';
-import functionCallingMethod from '@labs/agent-loop/002-main-agent-loop/CodingAgent/Agent.cs?raw&lines=54-61';
+import { Aside, Card, Steps } from '@astrojs/starlight/components';
 
 In this section, we'll explore the agent loop and how to implement it from
 scratch. We'll also explain alternatives to building your own agent loop so you
 can make an informed decision for your use case.
 
-## What is an agent loop and how does it work?
+## What is an agent loop?
 
 ### Using an LLM as a chat bot
 
@@ -84,12 +75,50 @@ loop:
 
 Let's get started implementing the agent loop!
 
-## Create the main application interface
+## Create the application entrypoint
 
 Start by modifying the `Program.cs` in the `CodingAgent` project.
 Add the following code to the end of the file:
 
-<Code code={mainApplicationLoop} title="Program.cs" lang="csharp" ins={{ range: "18-37"}}/>
+```csharp title="Program.cs" ins={18-37}
+using Microsoft.Extensions.Configuration;
+using Microsoft.SemanticKernel;
+using CodingAgent;
+using Spectre.Console;
+
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets(typeof(Program).Assembly)
+    .AddEnvironmentVariables()
+    .Build();
+
+var kernelBuilder = Kernel.CreateBuilder()
+    .AddAzureOpenAIChatCompletion(
+        configuration["LanguageModel:DeploymentName"]!,
+        configuration["LanguageModel:Endpoint"]!,
+        configuration["LanguageModel:ApiKey"]!
+    );
+
+var kernel = kernelBuilder.Build();
+var agent = new Agent(kernel);
+
+AnsiConsole.Write(new Markup("[green]CODING AGENT[/]\n"));
+AnsiConsole.Write(new Rule());
+
+while (true)
+{
+    var prompt = AnsiConsole.Prompt(new TextPrompt<string>(">"));
+    var callbacks = new ConsoleCallbacks();
+
+    // Stop the application when the user enters /exit or /quit.
+    if (string.Compare(prompt, "/exit", StringComparison.OrdinalIgnoreCase) == 0 ||
+        string.Compare(prompt, "/quit", StringComparison.OrdinalIgnoreCase) == 0)
+    {
+        break;
+    }
+
+    await agent.InvokeAsync(prompt, callbacks);
+}
+```
 
 Let's go over this code step by step:
 
@@ -115,31 +144,65 @@ components:
    will contain the interface used by the agent to send content back to the
    user or ask for additional input.
 
-   <Code code={emptyAgentCallbacks} title="IAgentCallbacks.cs" lang="csharp" />
+   ```csharp title="IAgentCallbacks.cs"
+   public interface IAgentCallbacks
+   {
+
+   }
+   ```
 
 2. Create a new class in the `CodingAgent` project called `Agent`.
 3. Add the following using statements to the top of the class file:
    
-   <Code code={emptyAgentStructure} title="Agent.cs" lang="csharp"/>
+   ```csharp title="Agent.cs"
+   using Microsoft.SemanticKernel;
+   using Microsoft.SemanticKernel.ChatCompletion;
+   using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+   ```
 
 4. Next, add the basic skeleton for the agent. This should include a field
    to store `ChatHistory` and a field to store an instance of the `Kernel`
    we configured in the main application.
   
-   <Code code={agentSkeleton} title="Program.cs" lang="csharp" />
+   ```csharp
+   using CodingAgent.Plugins;
+   using Microsoft.SemanticKernel;
+   using Microsoft.SemanticKernel.ChatCompletion;
+   using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+
+   namespace CodingAgent;
+
+   public class Agent
+   {
+      private ChatHistory _chatHistory;
+      private readonly Kernel _kernel;
+
+      public Agent(Kernel kernel)
+      {
+         _chatHistory = new ChatHistory();
+         _kernel = kernel;
+      }
+   }
+   ```
 
 8. Add a new public method to the `Agent` class with the name `InvokeAsync`. 
    This method must return a `Task` and accept a parameter `prompt` of type 
    `string` and a parameter `callbacks` of type `IAgentCallbacks`. 
 
-   <Code code={invokeMethodSkeleton} />
+   ```csharp title="Agent.cs"
+   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
+   {
+
+   }
+   ```
+
 </Steps>
 
 The `Agent` will serve as the main component where we implement the agent loop
 and connect to tools. The `IAgentCallbacks` interface is important as it will
 help us report results to the terminal and ask for more user input.
 
-## Create the content of the InvokeAsync method
+## Implement the InvokeAsync method
 
 Now that we have the skeleton in place, it's time to write the logic
 for the `InvokeAsync` method.
@@ -150,13 +213,36 @@ for the `InvokeAsync` method.
    looking `while(true)` loop that doesn't make much sense now, but we'll improve
    this situation later.
 
-   <Code code={mainAgentLoop} lang="csharp" title="Agent.cs"/>
+   ```csharp title="Agent.cs" ins={3-17}
+   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
+   {
+      var iterations = 0;
+      var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
-   In the main agent loop we need to use the chat functionality of Semantic Kernel
-   to communicate with the language model. Remember, we're essentially using a chat
-   bot to build a coding agent. In Semantic Kernel you can get services like
-   `IChatCompletionService` from the kernel by calling `GetRequiredService` on it
-   with the type of service you need. 
+      _chatHistory.AddUserMessage(prompt);
+      _sharedToolsPlugin.Reset();
+
+      while (true)
+      {
+         iterations++;
+
+         if (iterations > 10)
+         {
+               break;
+         }
+      }
+   }
+   ```
+
+   In the main agent loop we get an instance of the `IChatCompletionService` to
+   communicate with the language model. Remember, we're essentially using a chat
+   to communicate with the language model. Remember, we're essentially using a
+   chat bot to build a coding agent. 
+   
+   In Semantic Kernel you can get services like `IChatCompletionService` from
+   the kernel by calling `GetRequiredService` on it with the type of service you
+   need. The `IChatCompletionService` is available because we configured it in
+   the `Program.cs` file when we called the setup code for Azure OpenAI.
 
    <Aside type="tip">
    The core of Semantic Kernel integrates a number of AI services like the chat
@@ -167,8 +253,38 @@ for the `InvokeAsync` method.
 
 2. In the main loop, invoke the chat completion service to get a response to
    the user prompt. You can use the `GetChatMessageContentAsync` method for this.
+   Add the received response to the chat history.
 
-   <Code code={chatCompletionCode} lang="csharp" title="Agent.cs" ins={ { range: "17-25"}}/>
+   ```csharp title="Agent.cs" ins={18-26}
+   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
+   {
+      var iterations = 0;
+      var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
+      _chatHistory.AddUserMessage(prompt);
+      _sharedToolsPlugin.Reset();
+
+      while (true)
+      {
+         iterations++;
+
+         if (iterations > 10)
+         {
+               break;
+         }
+
+         var promptExecutionSettings = new AzureOpenAIPromptExecutionSettings()
+         {
+               FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false),
+         };
+
+         var response = await chatCompletionService
+               .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+
+         _chatHistory.Add(response);
+      }
+   }
+   ```
 
    This code uses a set of prompt execution settings. These settings control how the 
    language model and Semantic Kernel behave when getting a response from the language model.
@@ -185,22 +301,81 @@ for the `InvokeAsync` method.
 3. For the agent to be able to code, we'll need to handle tool calls. Let's add this
    code to the agent loop next.
 
-   <Code code={toolHandlingCode} lang="csharp" title="Agent.cs" ins={{range: "27-32"}}/>
+   ```csharp ins={28-33}
+   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
+   {
+      var iterations = 0;
+      var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
+      _chatHistory.AddUserMessage(prompt);
+      _sharedToolsPlugin.Reset();
+
+      while (true)
+      {
+         iterations++;
+
+         if (iterations > 10)
+         {
+               break;
+         }
+
+         var promptExecutionSettings = new AzureOpenAIPromptExecutionSettings()
+         {
+               FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false),
+         };
+
+         var response = await chatCompletionService
+            .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+
+         _chatHistory.Add(response);
+
+         var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
+
+         if (functionCalls.Any())
+         {
+            await HandleFunctionCalls(functionCalls);
+         }
+      }
+   }
+   ```
 
 4. The `HandleFunctionCalls` method is responsible for calling functions and reporting
    results. We're not going to report results in this lab, but we need to add the function
    calling logic:
 
-   <Code code={functionCallingMethod} lang="csharp" title="Agent.cs" />
+   ```csharp
+   private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls)
+   {
+      foreach (var functionCall in functionCalls)
+      {
+         var output = await functionCall.InvokeAsync(_kernel);
+         _chatHistory.Add(output.ToChatMessage());
+      }
+   }
+   ```
 
    This code will iterate over the function calls detected by the language model and
    execute them one-by-one, reporting the result as a chat message. 
+
+   <Aside type="tip" title="Why are we not using the built-in tool invocation?">
+
+   Semantic Kernel can completely handle tool invocation for you. You can set the
+   `FunctionChoiceBehavior` to `Auto(autoInvoke: true)` and the SDK will take care
+   of invoking tools for you.
+
+   However, by manually invoking tools you give yourself the opportunity to add
+   controls around tool invocation. For example, you could check shell commands
+   before they're executed!
+
+   </Aside>
 </Steps>
+
+
 
 With the skeleton in place we can start chatting to the agent. Note that you can't 
 see what the agent is doing unless you run the agent with a debugger attached.
 
-## Implement the final output tool
+## Add the final output tool
 
 A key component is still missing. We need to give the agent a good way to end its turn 
 when implementing code. Right now, we're checking for a maximum number of iterations, but 
@@ -212,6 +387,302 @@ allow the agent to signal the application that it is done.
 In Semantic Kernel you can use plugins to provide tools to agents. We're going to build
 a `SharedToolsPlugin` class to implement the final output tool.
 
-//TODO: Add steps for final output tool
+<Steps>
+
+1. Create a new class `Plugins/SharedToolsPlugin.cs` in the `CodingAgent` project.
+2. Add the following using statements to the top of the file:
+
+   ```csharp title="Plugins/SharedToolsPlugin.cs"
+   using System.ComponentModel;
+   using Microsoft.SemanticKernel;
+   ```
+
+3. Next, add two properties to the class to store the final output and a flag
+   indicating whether the final output tool was called and the final output to
+   be shown to the user. 
+
+   ```csharp title="Plugins/SharedToolsPlugin.cs"
+   public class SharedToolsPlugin
+   {
+      public bool TaskCompleted { get; private set; }
+      public string FinalOutput { get; private set; } = "";
+
+      public void Reset()
+      {
+         TaskCompleted = false;
+         FinalOutput = "";
+      }
+   }
+   ```
+
+4. Finally, add the `FinalOutputAsync` method to the class. This method will
+   be the tool that the agent can call to signal that it is done.
+
+   ```csharp title="Plugins/SharedToolsPlugin.cs" ins={12-23}
+   public class SharedToolsPlugin
+   {
+      public bool TaskCompleted { get; private set; }
+      public string FinalOutput { get; private set; } = "";
+
+      public void Reset()
+      {
+         TaskCompleted = false;
+         FinalOutput = "";
+      }
+      
+      [KernelFunction("final_output")]
+      [Description(
+         """
+         Use this tool to provide the final answer to the user.
+         The final output tool MUST be called with final answer to the user.
+         """
+      )]
+      public void FinalToolOutput([Description("The final answer to the user.")] string output)
+      {
+         FinalOutput = output;
+         TaskCompleted = true;
+      }
+   }
+   ```
+
+</Steps>
+
+When you test the agent in the current state, it will work, but you can't see
+anything. Also, it may be very slow to get back to the prompt because the agent
+doesn't always use the final output tool. We need to provide it with proper
+instructions to make sure it uses the tool correctly.
+
+## Add agent instructions
+
+Let's add logic to instruct the agent to use the final output tool. The logic we
+write here will also be important if you want to use custom instructions later.
+
+<Steps>
+
+1. Add a new file `IAgentInstructions.cs` to the `CodingAgent` project.
+1. Add the following using statements to the file:
+
+   ```csharp title="IAgentInstructions.cs"
+   using Microsoft.SemanticKernel.ChatCompletion;
+   ```
+
+1. Next, add the following code to the file to define the agent instructions:
+
+   ```csharp title="IAgentInstructions.cs"
+   namespace CodingAgent;
+
+   public interface IAgentInstructions
+   {
+      Task InjectAsync(ChatHistory chatHistory);
+      void Remove(ChatHistory chatHistory);
+   }
+   ```
+
+   We add two methods, one to inject the instructions into the chat history and
+   one to remove them. You want to inject and remove instructions so that they
+   won't end up in storage when you persist the chat history.
+
+1. Then, create a new class `EmbeddedResource.cs` with the following content:
+
+   ```csharp title="EmbeddedResource.cs"
+   namespace CodingAgent;
+
+   public static class EmbeddedResource
+   {
+      public static string Read(string resourceName)
+      {
+         var assembly = typeof(EmbeddedResource).Assembly;
+         
+         using var stream = assembly.GetManifestResourceStream(resourceName);
+         using var reader = new StreamReader(stream!);
+
+         return reader.ReadToEnd();
+      }
+   }
+   ```
+
+1. After, create a class `AgentInstructions.cs` in the `CodingAgent` project.
+1. Add the following using statements to the top of the file:
+
+   ```csharp title="AgentInstructions.cs"
+   using Microsoft.SemanticKernel.ChatCompletion;
+   ```
+
+1. Next, implement the `IAgentInstructions` interface in the `AgentInstructions`
+   class:
+
+   ```csharp title="AgentInstructions.cs"
+   namespace CodingAgent;
+
+   public class AgentInstructions: IAgentInstructions
+   {
+      private readonly Kernel _kernel;
+
+      public AgentInstructions(Kernel kernel)
+      {
+         _kernel = kernel;
+      }
+
+      public async Task InjectAsync(ChatHistory chatHistory)
+      {
+         var systemPrompt = await ReadSystemInstructionsAsync();
+         chatHistory.Insert(0, new ChatMessageContent(AuthorRole.System, systemPrompt));
+      }
+
+      public void Remove(ChatHistory chatHistory)
+      {
+         if (chatHistory.Count > 0 && chatHistory[0].Role == AuthorRole.System)
+         {
+            chatHistory.RemoveAt(0);
+         }
+      }
+   }
+   ```
+
+   The `InjectAsync` method reads the system instructions from an embedded
+   resource and adds them as the first message in the chat history with the role
+   `System`.
+
+   The `Remove` method checks if the first message in the chat history is a
+   system message and removes it if so.
+
+1. Download [SystemInstructions.txt]() and place it in the `Resources` folder
+   in the `CodingAgent` project. Make sure to set the file's build action to
+   `Embedded Resource` in the file properties.
+
+1. Create the method `ReadSystemInstructionsAsync` in the `AgentInstructions`
+   class to read the system instructions from an embedded resource:
+
+   ```csharp title="AgentInstructions.cs" ins={30-38}
+   private async Task<string> ReadSystemInstructionsAsync()
+   {
+      var resourceName = "CodingAgent.Resources.SystemInstructions.txt";
+      var instructions = EmbeddedResource.Read(resourceName);
+
+      return await Task.FromResult(instructions);
+   }
+   ```
+
+1. Modify the `Agent` class so it accepts `IAgentInstructions` in the
+   constructor and store them in the `_agentInstructions` variable.
+
+   ```csharp title="Agent.cs" ins={7,10,14} del={9}
+   public class Agent
+   {
+      private const int MaxIterations = 50;
+      private ChatHistory _chatHistory;
+      private readonly Kernel _kernel;
+      private readonly SharedToolsPlugin _sharedToolsPlugin;
+      private readonly IAgentInstructions _agentInstructions;
+
+      public Agent(Kernel kernel)
+      public Agent(Kernel kernel, IAgentInstructions agentInstructions)
+      {
+         _chatHistory = new ChatHistory();
+         _kernel = kernel;
+         _agentInstructions = agentInstructions;
+         _sharedToolsPlugin = new SharedToolsPlugin();
+         _kernel.Plugins.AddFromObject(_sharedToolsPlugin);
+      }
+   
+      // Rest of the class
+   }
+   ```
+
+1. Modify the `InvokeAsync` method in the `Agent` class to inject and
+   remove the instructions.
+
+   ```csharp title="Agent.cs" ins={6,42}
+   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
+   {
+      var iterations = 0;
+      var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
+      await _agentInstructions.InjectAsync(_chatHistory);
+      _chatHistory.AddUserMessage(prompt);
+      _sharedToolsPlugin.Reset();
+
+      while (true)
+      {
+         iterations++;
+
+         if (iterations > MaxIterations)
+         {
+               break;
+         }
+
+         var promptExecutionSettings = new AzureOpenAIPromptExecutionSettings()
+         {
+               FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false),
+         };
+
+         var response = await chatCompletionService
+         .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+
+         _chatHistory.Add(response);
+
+         var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
+
+         if (functionCalls.Any())
+         {
+         await HandleFunctionCalls(functionCalls);
+
+         if (_sharedToolsPlugin.TaskCompleted)
+               {
+                  break;
+               }
+         }
+      }
+   
+      _agentInstructions.Remove(_chatHistory);
+   }
+   ```
+
+1. Modify `Program.cs` to inject the `AgentInstructions` when creating the
+   `Agent` instance.
+
+   ```csharp title="Program.cs" ins={19,21} del={20}
+   using Microsoft.Extensions.Configuration;
+   using Microsoft.SemanticKernel;
+   using CodingAgent;
+   using Spectre.Console;
+
+   var configuration = new ConfigurationBuilder()
+      .AddUserSecrets(typeof(Program).Assembly)
+      .AddEnvironmentVariables()
+      .Build();
+
+   var kernelBuilder = Kernel.CreateBuilder()
+      .AddAzureOpenAIChatCompletion(
+         configuration["LanguageModel:DeploymentName"]!,
+         configuration["LanguageModel:Endpoint"]!,
+         configuration["LanguageModel:ApiKey"]!
+      );
+
+   var kernel = kernelBuilder.Build();
+   var instructions = new AgentInstructions(kernel);
+   var agent = new Agent(kernel);
+   var agent = new Agent(kernel, instructions);
+
+   AnsiConsole.Write(new Markup("[green]CODING AGENT[/]\n"));
+   AnsiConsole.Write(new Rule());
+
+   while (true)
+   {
+      var prompt = AnsiConsole.Prompt(new TextPrompt<string>(">"));
+      var callbacks = new ConsoleCallbacks();
+
+      // Stop the application when the user enters /exit or /quit.
+      if (string.Compare(prompt, "/exit", StringComparison.OrdinalIgnoreCase) == 0 ||
+         string.Compare(prompt, "/quit", StringComparison.OrdinalIgnoreCase) == 0)
+      {
+         break;
+      }
+
+      await agent.InvokeAsync(prompt, callbacks);
+   }
+   ```
+
+</Steps>
 
 [SK_SERVICES]: https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/
