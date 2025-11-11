@@ -16,7 +16,7 @@ var kernelBuilder = Kernel.CreateBuilder()
     );
 
 var kernel = kernelBuilder.Build();
-var instructions = new AgentInstructions(kernel);
+var instructions = new AgentInstructions();
 var agent = new Agent(kernel, instructions);
 
 AnsiConsole.Write(new Markup("[green]CODING AGENT[/]\n"));

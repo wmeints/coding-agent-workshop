@@ -13,16 +13,8 @@ public class ConsoleCallbacks : IAgentCallbacks
 
     public Task ReportAgentResponseAsync(string responseContent)
     {
-        AnsiConsole.Write(new Rule($"Response"));
+        AnsiConsole.Write(new Rule("Response"));
         AnsiConsole.Write(new Text($"{responseContent}\n"));
-        
-        return Task.CompletedTask;
-    }
-
-    public Task ReportTaskCompletedAsync(string finalOutput)
-    {
-        AnsiConsole.Write(new Rule($"Response"));
-        AnsiConsole.Write(new Text($"{finalOutput}\n"));
         
         return Task.CompletedTask;
     }

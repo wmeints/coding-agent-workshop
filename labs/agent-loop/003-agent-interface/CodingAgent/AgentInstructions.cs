@@ -7,13 +7,6 @@ namespace CodingAgent;
 
 public class AgentInstructions : IAgentInstructions
 {
-    private readonly Kernel _kernel;
-
-    public AgentInstructions(Kernel kernel)
-    {
-        _kernel = kernel;
-    }
-
     public async Task InjectAsync(ChatHistory chatHistory)
     {
         var systemPrompt = await ReadSystemInstructionsAsync();
