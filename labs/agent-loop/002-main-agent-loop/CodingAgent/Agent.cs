@@ -1,4 +1,3 @@
-using CodingAgent.Plugins;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
@@ -7,10 +6,8 @@ namespace CodingAgent;
 
 public class Agent
 {
-    private const int MaxIterations = 50;
     private ChatHistory _chatHistory;
     private readonly Kernel _kernel;
-    private readonly SharedToolsPlugin _sharedToolsPlugin;
     private readonly IAgentInstructions _agentInstructions;
 
     public Agent(Kernel kernel, IAgentInstructions agentInstructions)
@@ -18,49 +15,36 @@ public class Agent
         _chatHistory = new ChatHistory();
         _kernel = kernel;
         _agentInstructions = agentInstructions;
-        _sharedToolsPlugin = new SharedToolsPlugin();
-        _kernel.Plugins.AddFromObject(_sharedToolsPlugin);
     }
 
     public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
     {
-        var iterations = 0;
         var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
         await _agentInstructions.InjectAsync(_chatHistory);
         _chatHistory.AddUserMessage(prompt);
-        _sharedToolsPlugin.Reset();
 
         while (true)
         {
-            iterations++;
-
-            if (iterations > MaxIterations)
-            {
-                break;
-            }
-
             var promptExecutionSettings = new AzureOpenAIPromptExecutionSettings()
             {
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false),
             };
 
-            var response = await chatCompletionService
-                .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+            var response = await chatCompletionService.GetChatMessageContentAsync(
+                _chatHistory, promptExecutionSettings);
 
             _chatHistory.Add(response);
 
             var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
 
-            if (functionCalls.Any())
+            if (!functionCalls.Any())
             {
-                await HandleFunctionCalls(functionCalls);
-
-                if (_sharedToolsPlugin.TaskCompleted)
-                {
-                    break;
-                }
+                // End the agent turn when there are no more function calls to process.
+                break;
             }
+
+            await HandleFunctionCalls(functionCalls);
         }
 
         _agentInstructions.Remove(_chatHistory);
