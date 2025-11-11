@@ -5,13 +5,24 @@ description: This tutorial teaches you how to implement the core agent loop from
 
 import { Aside, Card, Steps } from '@astrojs/starlight/components';
 
-In this section, we'll explore the agent loop and how to implement it from
-scratch. We'll also explain alternatives to building your own agent loop so you
-can make an informed decision for your use case.
+In this lab, we'll implement the core agent loop from scratch. The agent loop
+is the heart of any agent application. It is responsible for receiving user
+input, sending it to the language model, handling tool calls, and returning
+the final output to the user.
+
+## Lab files
+
+- **Starter:** [labs/agent-loop/001-setup-application](/labs/agent-loop/001-setup-application)
+- **Solution:** [labs/agent-loop/002-main-agent-loop](/labs/agent-loop/002-main-agent-loop)
 
 ## What is an agent loop?
 
-### Using an LLM as a chat bot
+Let's first explore what an agent loop is. An agent loop is a continuous process that
+allows an AI agent to interact with its environment, make decisions, and perform
+actions based on the input it receives.
+
+The agent loop shows similarities to how chat bots like ChatGPT work. Let's explore
+this first, and then look at how we can extend this to build an agent loop.
 
 Remember how an LLM can generate a response based on input. Modern LLMs are
 trained as chat bots, which means they are designed to handle multi-turn
@@ -34,46 +45,11 @@ with the result of the tool execution included. This process can repeat
 multiple times, with the LLM deciding to use more tools as needed, until it
 generates a final answer.
 
-### Using an LLM as an agent
+The use of tools is what turns a chat bot interaction loop into an agent loop. 
+Depending on what you want to do with your agent, you're going to need different tools
+as we'll learn in later modules.
 
-When building a chatbot, you typically stop the loop when you receive a text
-response. However, when building an agent, you want to keep the loop going until
-the agent has completed its task. 
-
-**The big question here:** How do you know when the agent has completed its
-task? There are multiple strategies to determine when to stop the agent loop:
-
-- **Fixed number of iterations:** You can set a maximum number of iterations
-  for the agent loop. Once the agent reaches this limit, it stops processing
-  further tool calls and returns the final answer. This approach is simple to
-  implement but may not always guarantee task completion.
-
-- **Task completion signal:** You can design the agent to recognize specific
-  signals or keywords in the LLM's response that indicate task completion. For
-  example, the agent could be programmed to stop when it generates a response
-  containing phrases like "Task completed" or "Final answer". This approach
-  requires careful prompt engineering to ensure the LLM understands when to
-  signal completion.
-
-- **Using a specialized tool:** You can create a dedicated tool that the agent
-  can call to signal task completion. If you create the tool with the proper
-  instructions, the LLM will call the tool when it believes the task is done.
-
-<Card title="We'll get back to tools, Promise!">
-Don't worry if you're not familiar with tools yet. We'll cover them in greater
-detail in the next module, so hang tight!
-</Card>
-
-For the workshop, we'll use two strategies to determine when to stop the agent
-loop:
-
-1. We'll set a maximum number of iterations to prevent infinite loops. This is
-   a failsafe mechanism to ensure we never have to kill the process to stop 
-   the agent.
-2. We'll implement a specialized tool called `final_output` that the agent can
-   call to signal task completion.
-
-Let's get started implementing the agent loop!
+For now, let's start by building the agent loop itself.
 
 ## Create the application entrypoint
 
@@ -226,7 +202,7 @@ for the `InvokeAsync` method.
       {
          iterations++;
 
-         if (iterations > 10)
+         if (iterations > 25)
          {
                break;
          }
@@ -245,30 +221,34 @@ for the `InvokeAsync` method.
    the `Program.cs` file when we called the setup code for Azure OpenAI.
 
    <Aside type="tip">
-   The core of Semantic Kernel integrates a number of AI services like the chat
-   completion service we've added in the `Program.cs` file and used here.
+   The core of Semantic Kernel integrates AI services like the chat
+   completion service we've added in the `Program.cs` file and used here. 
+   
+   There are other AI services you can use like the text embedding generators for
+   building semantic representations of content so you can let the agent search
+   content based on meaning rather than literal keywords.
+
    Check out the [Microsoft Docs][SK_SERVICES] to learn more about how AI services
-   like the chat completion service work.
+   services work in Semantic Kernel.
    </Aside>
 
 2. In the main loop, invoke the chat completion service to get a response to
    the user prompt. You can use the `GetChatMessageContentAsync` method for this.
    Add the received response to the chat history.
 
-   ```csharp title="Agent.cs" ins={18-26}
+   ```csharp title="Agent.cs" ins={17-25}
    public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
    {
       var iterations = 0;
       var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
       _chatHistory.AddUserMessage(prompt);
-      _sharedToolsPlugin.Reset();
 
       while (true)
       {
          iterations++;
 
-         if (iterations > 10)
+         if (iterations > 25)
          {
                break;
          }
@@ -289,19 +269,19 @@ for the `InvokeAsync` method.
    This code uses a set of prompt execution settings. These settings control how the 
    language model and Semantic Kernel behave when getting a response from the language model.
 
-   Semantic Kernel uses `FunctionChoiceBehavior` to control how tools are invoked. You can
-   set this setting to `None` to prevent tool calls. You can also set it to `Auto` so that
-   all tools are available. For the agent, we're going to have to set the behavior so that
-   all tools are available, but not invoked. We will handle the invocation ourselves.
+   Semantic Kernel uses `FunctionChoiceBehavior` to control how tools are invoked. You
+   can set this setting to `None` to prevent tool calls. You can also set it to `Auto`
+   so that all tools are available. For our coding agent, we're going to have to set the
+   behavior so that all tools are available, but not invoked. We will handle the
+   invocation ourselves.
 
-   After calling the language model, we need to save the response to the chat history. This
-   is important, as without it the next call to the language model will need the response
-   to make sense of what we're doing.
+   After calling the language model, we need to save the response to the chat history.
+   This is important for building context so the agent knows what to do next.
 
 3. For the agent to be able to code, we'll need to handle tool calls. Let's add this
    code to the agent loop next.
 
-   ```csharp ins={28-33}
+   ```csharp ins={28-36}
    public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
    {
       var iterations = 0;
@@ -331,10 +311,13 @@ for the `InvokeAsync` method.
 
          var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
 
-         if (functionCalls.Any())
+         if (!functionCalls.Any())
          {
-            await HandleFunctionCalls(functionCalls);
+            // Stop processing if the model has no more function calls to make.
+            break;
          }
+
+         await HandleFunctionCalls(functionCalls);
       }
    }
    ```
@@ -357,7 +340,7 @@ for the `InvokeAsync` method.
    This code will iterate over the function calls detected by the language model and
    execute them one-by-one, reporting the result as a chat message. 
 
-   <Aside type="tip" title="Why are we not using the built-in tool invocation?">
+   <Aside type="tip" title="You can simplify tool invocations">
 
    Semantic Kernel can completely handle tool invocation for you. You can set the
    `FunctionChoiceBehavior` to `Auto(autoInvoke: true)` and the SDK will take care
@@ -370,92 +353,13 @@ for the `InvokeAsync` method.
    </Aside>
 </Steps>
 
-
-
-With the skeleton in place we can start chatting to the agent. Note that you can't 
-see what the agent is doing unless you run the agent with a debugger attached.
-
-## Add the final output tool
-
-A key component is still missing. We need to give the agent a good way to end its turn 
-when implementing code. Right now, we're checking for a maximum number of iterations, but 
-this causes the agent to continue working even when it completes its work in less iterations.
-
-We need to add our first tool to the agent, called the final output tool. This tool will
-allow the agent to signal the application that it is done. 
-
-In Semantic Kernel you can use plugins to provide tools to agents. We're going to build
-a `SharedToolsPlugin` class to implement the final output tool.
-
-<Steps>
-
-1. Create a new class `Plugins/SharedToolsPlugin.cs` in the `CodingAgent` project.
-2. Add the following using statements to the top of the file:
-
-   ```csharp title="Plugins/SharedToolsPlugin.cs"
-   using System.ComponentModel;
-   using Microsoft.SemanticKernel;
-   ```
-
-3. Next, add two properties to the class to store the final output and a flag
-   indicating whether the final output tool was called and the final output to
-   be shown to the user. 
-
-   ```csharp title="Plugins/SharedToolsPlugin.cs"
-   public class SharedToolsPlugin
-   {
-      public bool TaskCompleted { get; private set; }
-      public string FinalOutput { get; private set; } = "";
-
-      public void Reset()
-      {
-         TaskCompleted = false;
-         FinalOutput = "";
-      }
-   }
-   ```
-
-4. Finally, add the `FinalOutputAsync` method to the class. This method will
-   be the tool that the agent can call to signal that it is done.
-
-   ```csharp title="Plugins/SharedToolsPlugin.cs" ins={12-23}
-   public class SharedToolsPlugin
-   {
-      public bool TaskCompleted { get; private set; }
-      public string FinalOutput { get; private set; } = "";
-
-      public void Reset()
-      {
-         TaskCompleted = false;
-         FinalOutput = "";
-      }
-      
-      [KernelFunction("final_output")]
-      [Description(
-         """
-         Use this tool to provide the final answer to the user.
-         The final output tool MUST be called with final answer to the user.
-         """
-      )]
-      public void FinalToolOutput([Description("The final answer to the user.")] string output)
-      {
-         FinalOutput = output;
-         TaskCompleted = true;
-      }
-   }
-   ```
-
-</Steps>
-
-When you test the agent in the current state, it will work, but you can't see
-anything. Also, it may be very slow to get back to the prompt because the agent
-doesn't always use the final output tool. We need to provide it with proper
-instructions to make sure it uses the tool correctly.
+At this point, the agent will be able to call tools and get a response from the LLM.
+However, it isn't exactly a developer yet. We need to add system instructions to turn
+our generic agent into a coding agent.
 
 ## Add agent instructions
 
-Let's add logic to instruct the agent to use the final output tool. The logic we
-write here will also be important if you want to use custom instructions later.
+Let's add logic to instruct the agent to behave more like a developer.
 
 <Steps>
 
@@ -481,6 +385,11 @@ write here will also be important if you want to use custom instructions later.
    We add two methods, one to inject the instructions into the chat history and
    one to remove them. You want to inject and remove instructions so that they
    won't end up in storage when you persist the chat history.
+
+   <Aside type="tip">
+   Never store your system instructions in storage. If you need to change them at some
+   point, you'll have to migrate a lot of data in storage to apply the new instructions.
+   </Aside>
 
 1. Then, create a new class `EmbeddedResource.cs` with the following content:
 
@@ -546,8 +455,8 @@ write here will also be important if you want to use custom instructions later.
    The `Remove` method checks if the first message in the chat history is a
    system message and removes it if so.
 
-1. Download [SystemInstructions.txt]() and place it in the `Resources` folder
-   in the `CodingAgent` project. Make sure to set the file's build action to
+1. Download [SystemInstructions.txt][AGENT_INSTRUCTIONS] and place it in the `Resources`
+   folder in the `CodingAgent` project. Make sure to set the file's build action to
    `Embedded Resource` in the file properties.
 
 1. Create the method `ReadSystemInstructionsAsync` in the `AgentInstructions`
@@ -698,3 +607,4 @@ Right now, the agent doesn't talk too much. We'll fix that in the next module wh
 implement callbacks to report progress to the user.
 
 [SK_SERVICES]: https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/
+[AGENT_INSTRUCTIONS]: https://raw.githubusercontent.com/wmeints/coding-agent-workshop/refs/heads/main/labs/agent-loop/002-agent-interface/CodingAgent/Resources/AgentSystemInstructions.txt
