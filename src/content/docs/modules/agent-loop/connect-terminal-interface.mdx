@@ -3,7 +3,240 @@ title: Connecting the terminal interface
 description: This tutorial explains how to connect the agent loop to a terminal interface.
 ---
 
-In this section we'll build the terminal user interface for the agent. We'll
+import { Aside, Card, Steps } from '@astrojs/starlight/components';
+
+In this lab we'll build the terminal user interface for the agent. We'll
 connect the interface to the agent and run some basic commands to verify
 that we have a complete working application.
 
+The agent loop we built in the previous lab works, but doesn't provide any feedback to
+the user about what it's doing. In this lab, we'll implement callbacks that allow the
+agent to report progress and results to the user in the terminal.
+
+## Lab files
+
+- **Starter:** [labs/agent-loop/002-main-agent-loop](/labs/agent-loop/002-main-agent-loop)
+- **Solution:** [labs/agent-loop/003-agent-interface](/labs/agent-loop/003-agent-interface)
+
+## Define callback methods
+
+First, we need to define the callback methods that the agent will use to
+communicate with the user interface. We'll add three methods to the
+`IAgentCallbacks` interface:
+
+<Steps>
+
+1. Open the `IAgentCallbacks.cs` file in the `CodingAgent` project.
+
+2. Add the following using statement to the top of the file:
+
+   ```csharp title="IAgentCallbacks.cs"
+   using Microsoft.SemanticKernel;
+   ```
+
+3. Add three method signatures to the interface:
+
+   ```csharp title="IAgentCallbacks.cs"
+   namespace CodingAgent;
+
+   public interface IAgentCallbacks
+   {
+       Task ReportFunctionCallAsync(string functionName, KernelArguments? arguments, object? output);
+       Task ReportAgentResponseAsync(string responseContent);
+   }
+   ```
+
+   These three methods serve different purposes:
+   - `ReportFunctionCallAsync` is called whenever the agent invokes a tool
+   - `ReportAgentResponseAsync` is called when the agent generates a text response without invoking tools
+
+</Steps>
+
+## Implement console callbacks
+
+Now that we have the interface defined, let's implement it in the
+`ConsoleCallbacks` class using Spectre.Console for formatted output.
+
+<Steps>
+
+1. Open the `ConsoleCallbacks.cs` file in the `CodingAgent` project.
+
+2. Add the following using statements to the top of the file:
+
+   ```csharp title="ConsoleCallbacks.cs"
+   using Microsoft.SemanticKernel;
+   using Spectre.Console;
+   ```
+
+3. Implement the `ReportFunctionCallAsync` method:
+
+   ```csharp title="ConsoleCallbacks.cs"
+   public class ConsoleCallbacks : IAgentCallbacks
+   {
+       public Task ReportFunctionCallAsync(string functionName, KernelArguments? arguments, object? output)
+       {
+           AnsiConsole.Write(new Rule($"Tool Call ({functionName})"));
+           return Task.CompletedTask;
+       }
+   }
+   ```
+
+   This method displays a horizontal rule with the name of the tool being called.
+   This gives the user a visual indication that the agent is invoking a tool.
+
+4. Implement the `ReportAgentResponseAsync` method:
+
+   ```csharp title="ConsoleCallbacks.cs"
+   public Task ReportAgentResponseAsync(string responseContent)
+   {
+       AnsiConsole.Write(new Rule($"Response"));
+       AnsiConsole.Write(new Text($"{responseContent}\n"));
+
+       return Task.CompletedTask;
+   }
+   ```
+
+   This method displays intermediate responses from the agent. These are responses
+   that the agent generates when it doesn't invoke any tools, such as when it's
+   thinking through a problem or asking for clarification.
+
+</Steps>
+
+<Aside type="note">
+We're using Spectre.Console's `Rule` and `Text` components to create formatted
+output in the terminal. The `Rule` creates a horizontal divider with a title,
+making it easy to distinguish between different types of agent activity.
+</Aside>
+
+## Report function calls
+
+With the callback implementation complete, we can now update the `Agent` class
+to call these callbacks at the appropriate times. Let's start by reporting
+function calls.
+
+<Steps>
+
+1. Open the `Agent.cs` file in the `CodingAgent` project.
+
+2. Modify the `HandleFunctionCalls` method signature to accept the `callbacks`
+   parameter:
+
+   ```csharp title="Agent.cs" del={1} ins={2}
+   private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls)
+   private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls, IAgentCallbacks callbacks)
+   {
+       foreach (var functionCall in functionCalls)
+       {
+           var output = await functionCall.InvokeAsync(_kernel);
+           _chatHistory.Add(output.ToChatMessage());
+       }
+   }
+   ```
+
+3. Add a call to `ReportFunctionCallAsync` after invoking each function:
+
+   ```csharp title="Agent.cs" ins={8-12}
+   private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls, IAgentCallbacks callbacks)
+   {
+       foreach (var functionCall in functionCalls)
+       {
+           var output = await functionCall.InvokeAsync(_kernel);
+           _chatHistory.Add(output.ToChatMessage());
+
+           await callbacks.ReportFunctionCallAsync(
+               functionCall.FunctionName,
+               functionCall.Arguments,
+               output.Result
+           );
+       }
+   }
+   ```
+
+   This reports each function call to the user interface after the function has
+   been invoked.
+
+4. Update the call to `HandleFunctionCalls` in the `InvokeAsync` method to pass
+   the `callbacks` parameter:
+
+   ```csharp title="Agent.cs" del={8} ins={9}
+   var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
+
+   if (!functionCalls.Any())
+   {
+       break;
+   }
+
+   await HandleFunctionCalls(functionCalls);
+   await HandleFunctionCalls(functionCalls, callbacks);
+   ```
+
+</Steps>
+
+## Report intermediate responses
+
+Finally, we need to improve the agent loop so the 
+
+<Steps>
+
+1. Add a check for intermediate responses in the `InvokeAsync` method of the 
+   `Agent` class:
+
+   ```csharp title="Agent.cs" ins={1-4}
+   if(!string.IsNullOrEmpty(response.Content))
+   {
+       await callbacks.ReportAgentResponseAsync(response.Content);
+   }
+
+   var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
+
+   if (!functionCalls.Any())
+   {
+       break;
+   }
+   ```
+
+   This reports any text response from the agent to the user interface.
+
+</Steps>
+
+## Test the agent
+
+Now that we've connected the terminal interface, let's test the agent to see how it
+behaves with the new callbacks.
+
+<Steps>
+
+1. Run the application with `dotnet run` from the `CodingAgent` project directory.
+
+2. Try asking the agent a simple question like "What is 2 + 2?"
+
+3. Since the question doesn't involve calling tools, you should get a response.
+
+</Steps>
+
+<Aside type="tip">
+The agent now provides real-time feedback about what it's doing. This makes it
+much easier to understand the agent's thought process and debug any issues that
+might arise.
+</Aside>
+
+## Summary
+
+In this lab, we connected the agent loop to a terminal interface using callbacks.
+We implemented two types of callbacks:
+
+1. **Function call reporting** - Shows when the agent invokes tools
+2. **Intermediate response reporting** - Shows agent responses that don't involve tool calls
+
+These callbacks make the agent much more transparent and user-friendly, allowing
+users to see exactly what the agent is doing at each step of the process.
+
+The callback pattern we implemented is flexible and can be easily adapted for
+other interfaces, such as a web UI or logging system, without changing the core
+agent logic.
+
+If you get stuck, you can find the solution for the lab here:
+[labs/agent-loop/003-agent-interface](/labs/agent-loop/003-agent-interface)
+
+In the next lab, we'll work on proper unit-tests for the agent so you don't need to
+manually verify its behavior each time you make a change.
