@@ -3,8 +3,64 @@ title: Testing the agent application
 description: This tutorial explains how you can test the agent loop with unit-tests and what other considerations you should have in mind when testing.
 ---
 
+import { Aside, Card, Steps } from '@astrojs/starlight/components';
+
 In this section we'll build a set of unit-tests and an integration test for the
 agent loop we created in the previous sections. Testing is an important part of
 building reliable agents and not always as straightforward as testing traditional
 applications.
 
+## Testing strategies for agents
+
+Before we start writing tests for the coding agent, we need to cover test strategies for
+agents in general. Agents differ from traditional software applications in many ways.
+Because they use AI, the results aren’t stable, and you can’t just run unit tests
+without solving the issues that arise from the fact that the AI responds differently
+each time.
+
+For the most part, you can follow the testing pyramid when defining a testing strategy
+for AI agents:
+
+- **Unit-tests:** Components that use rules without any AI can still be unit-tested 
+as you normally would. For components that involve an interaction with the LLM, I recommend
+using a mock. We'll try this out during the lab.
+
+- **Integration tests:** Integration tests should focus on contracts and not exact results.
+  You can't expect the same output from an LLM each time. This may sound like a obvious statement,
+  but I've found that I have to remind me of this often when writing tests for agents.
+
+  There is some good news on this front though. Some LLM providers are starting to offer
+  "deterministic" modes where the same input will yield the same output each time.
+  In Semantic Kernel you can set a Seed property to enable deterministic responses. This
+  will make things somewhat easier when writing tests.
+
+- **Simulation tests:** The top of the test pyramid is often implemented with end-to-end
+  tests. It's quite difficult to build simple end-to-end tests with agents as the results
+  are likely to vary. 
+  
+  To solve this, you can build simulation tests that check for the end result rather
+  than the steps taken to get there. You can use an LLM to ask questions about the end
+  state of the simulation to verify that you got results that make some sense.
+
+  For the coding agent, you can for example configure the agent to run with a specific
+  set of code and instructions and then use a second agent to analyze the outcome of the
+  coding agent.
+
+  <Aside type="note">
+  Something is still nagging me when I'm explaining simulation tests: Can you truly
+  trust an agent to verify another agent? The truth is that you probably can't. But
+  research shows that LLMs will get it right around 80% of the time. So it's still
+  valuable. But you should be aware of the limitations.
+  </Aside>
+
+In this lab we'll limit ourselves to building unit-tests. But I want to challenge you to
+think about how you would setup a simulation test for the coding agent as a thinking
+exercise.
+
+## Unit-testing the agent loop
+
+[Provide lab instructions for unit-testing the main agent loop.]
+
+## Summary
+
+[Provide a summary of the testing strategies and the importance of testing agents.]
