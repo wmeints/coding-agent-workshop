@@ -10,6 +10,11 @@ agent loop we created in the previous sections. Testing is an important part of
 building reliable agents and not always as straightforward as testing traditional
 applications.
 
+## Lab files
+
+- **Starter:** [labs/agent-loop/003-agent-interface](/labs/agent-loop/003-agent-interface)
+- **Solution:** [labs/agent-loop/004-testing-agents](/labs/agent-loop/004-testing-agents)
+
 ## Testing strategies for agents
 
 Before we start writing tests for the coding agent, we need to cover test strategies for
@@ -59,19 +64,234 @@ exercise.
 
 ## Creating fake objects for testing
 
-[Provide lab instructions for creating the TestObjectFactory and fake implementations]
+In this section, you'll create a test project and build helper utilities to simplify
+testing the agent loop. You'll start by setting up the test project, then create a
+factory class that generates test objects like fake kernels and mock chat responses.
+
+### Setting up the test project
+
+<Steps>
+
+1. Create a new xUnit test project named `CodingAgent.Tests` in the solution directory.
+   Use the `dotnet new xunit` command to scaffold the project.
+
+2. Add a project reference from `CodingAgent.Tests` to the `CodingAgent` project so you
+   can test the agent implementation.
+
+3. Install the Moq package to help mock dependencies. Use `dotnet add package Moq` to
+   add it to your test project.
+
+4. Delete the default `UnitTest1.cs` file that was created by the template, as you'll
+   be creating your own test classes.
+
+</Steps>
+
+### Building the TestObjectFactory
+
+The `TestObjectFactory` will provide reusable methods for creating test objects. This
+keeps your test code clean and reduces duplication.
+
+<Steps>
+
+1. Create a new class called `TestObjectFactory` in the test project. This will be a
+   static utility class containing factory methods.
+
+2. Implement a `CreateTestKernel` method that accepts an `IChatCompletionService`
+   parameter and returns a configured `Kernel` instance. Use the [Kernel builder pattern](https://learn.microsoft.com/en-us/semantic-kernel/concepts/kernel)
+   to create the kernel and register the chat completion service as a singleton.
+
+3. Create a `CreateFakeToolCall` method that returns a `ChatMessageContent` object
+   containing a function call. This method should accept:
+   
+   - Plugin name (`string`)
+   - Tool name (`string`)
+   - Optional content (`string`)
+   - Optional arguments (`Dictionary<string, object?>`)
+
+   Use `FunctionCallContent` to represent the tool call and add it to a
+   `ChatMessageContentItemCollection`. If content is provided, also add a `TextContent`
+   item. Return a new `ChatMessageContent` with `AuthorRole.Assistant` and the items
+   collection.
+
+4. Add a `CreateFakeAgentResponse` method that accepts a string content parameter and
+   returns a simple `ChatMessageContent` object with `AuthorRole.Assistant` and the
+   provided content. This simulates a text response from the agent without any tool calls.
+
+</Steps>
+
+<Aside type="tip">
+The TestObjectFactory encapsulates the complexity of creating test doubles for Semantic
+Kernel objects. By centralizing this logic, you make your tests more maintainable and
+easier to read.
+</Aside>
 
 ## Testing tool calling functionality
 
-[Provide lab instructions for testing tool calling functionality. Starting with 
-mocking the chat completion service, then explaining how to set up fake tools,
-and finally the main test loop.]
+Now that you have helper utilities for creating test objects, you'll write your first
+test to verify the agent correctly invokes tools when the LLM requests them.
+
+### Creating the test class
+
+<Steps>
+
+1. Create a new class called `AgentTests` in the test project. This will contain all
+   your agent unit tests.
+
+2. Add a test method called `Test_PromptCausingToolCall_InvokesTool` decorated with the
+   `[Fact]` attribute. This test will verify that when the LLM returns a function call,
+   the agent properly invokes that function.
+
+</Steps>
+
+### Mocking the chat completion service
+
+The key to testing the agent loop is controlling what the LLM returns. You'll use Moq
+to create a mock chat completion service that returns predefined responses.
+
+<Steps>
+
+1. Create a mock `IAgentCallbacks` object using Moq. This will allow you to verify that
+   the agent reports function calls correctly.
+
+2. Create a mock `IChatCompletionService` using Moq. This will simulate the LLM's
+   responses.
+
+3. Use `TestObjectFactory.CreateTestKernel` to create a kernel with your mock chat
+   completion service.
+
+4. Instantiate the `Agent` class with the test kernel and a new `AgentInstructions`
+   instance.
+
+</Steps>
+
+### Setting up fake tools
+
+<Steps>
+
+1. Add a test plugin to the kernel using `kernel.Plugins.AddFromFunctions`. Create a
+   plugin named "TestPlugin" with a single function called "test_function" that does
+   nothing. Use `KernelFunctionFactory.CreateFromMethod` to create the function from
+   a lambda expression.
+
+2. Configure the mock chat completion service using `SetupSequence` on the
+   `GetChatMessageContentsAsync` method. The sequence should return:
+   - First call: A fake tool call (using `TestObjectFactory.CreateFakeToolCall`) for
+     "TestPlugin.test_function"
+   - Second call: A fake agent response (using `TestObjectFactory.CreateFakeAgentResponse`)
+     with "All done!"
+
+   This simulates the agent loop: first the LLM requests a tool, then after the tool
+   executes, the LLM provides a final response.
+
+</Steps>
+
+<Aside type="note">
+The `SetupSequence` method is crucial here because the agent loop calls the chat
+completion service multiple times. Each call in the sequence returns a different
+response, simulating a realistic conversation flow.
+</Aside>
+
+### Writing the test assertion
+
+<Steps>
+
+1. Invoke the agent with a test prompt and the mock callbacks object.
+
+2. Use `agentCallbacks.Verify` to assert that `ReportFunctionCallAsync` was called with
+   the function name "test_function". Use `It.Is<string>()` to match the function name
+   and `It.IsAny<>()` for other parameters you don't need to verify strictly.
+
+</Steps>
+
+Your first test is complete! Run it with `dotnet test` to verify it passes.
 
 ## Testing agent responses
 
-[Provide lab instructions for testing agent responses. Let the attendee
-reuse the setup code from the previous test, but without the fake tools this time.]
+Not all prompts result in tool calls. Sometimes the agent simply returns a text
+response. In this section, you'll write tests to verify the agent handles different
+response scenarios correctly.
+
+### Testing responses without tool calls
+
+<Steps>
+
+1. Create a new test method called `Test_PromptWithoutToolCall_ReturnsResponse` in your
+   `AgentTests` class.
+
+2. Set up the same mocks as before (agent callbacks, chat completion service, kernel,
+   and agent instance), but this time skip adding any plugins to the kernel.
+
+3. Configure the mock chat completion service to return only a fake agent response
+   (no tool calls). Use `Setup` instead of `SetupSequence` since there's only one
+   response needed.
+
+4. Invoke the agent with a test prompt.
+
+5. Verify that `ReportAgentResponseAsync` was called with the expected content
+   ("All done!").
+
+6. Verify that `ReportFunctionCallAsync` was never called by using
+   `Times.Never()` in your verification.
+
+</Steps>
+
+### Testing mixed responses
+
+Some LLM responses contain both text content and function calls. This happens when the
+agent explains what it's doing while also requesting tool execution.
+
+<Steps>
+
+1. Add a test method called `Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse`.
+
+2. Reuse the setup pattern from the first test, including adding the test plugin.
+
+3. Configure the mock chat completion service sequence to return:
+   - First call: A fake tool call that includes both a function call and text content
+     (e.g., "Invoking the test function"). Use the optional content parameter in
+     `CreateFakeToolCall`.
+   - Second call: A fake agent response with "All done!"
+
+4. Invoke the agent with a test prompt.
+
+5. Verify that `ReportAgentResponseAsync` was called exactly twice (once for the content
+   during the tool call, once for the final response). Use `Times.Exactly(2)`.
+
+6. Verify that `ReportFunctionCallAsync` was called exactly once.
+
+</Steps>
+
+<Aside type="tip">
+These three tests cover the main scenarios in the agent loop: tool calls only, text
+responses only, and mixed responses. This gives you confidence that the core agent
+behavior works correctly without needing to call a real LLM.
+</Aside>
 
 ## Summary
 
-[Provide a summary of the testing strategies and the importance of testing agents.]
+In this lab, you built a comprehensive test suite for the agent loop using unit tests
+with mocked dependencies. You learned how to:
+
+- Create a test project with xUnit and Moq for testing Semantic Kernel applications
+- Build reusable factory methods to generate test objects like fake kernels, tool calls,
+  and agent responses
+- Mock the `IChatCompletionService` to control LLM responses during testing
+- Use `SetupSequence` to simulate multi-turn agent conversations
+- Verify that the agent correctly handles tool calls, text responses, and mixed responses
+- Test callback invocations to ensure the agent reports its actions properly
+
+Testing agents presents unique challenges because of the non-deterministic nature of
+LLMs. By using mocks for unit tests, you can verify the agent loop logic without
+depending on external services. This approach gives you fast, reliable tests that run
+consistently.
+
+As you continue building more complex agents, remember the testing pyramid:
+- Unit tests with mocks for agent loop logic
+- Integration tests for contracts and workflows
+- Simulation tests for end-to-end scenarios
+
+For more information on testing patterns with Semantic Kernel, refer to the
+[Unit Testing with Semantic Kernel](https://devblogs.microsoft.com/semantic-kernel/unit-testing-with-semantic-kernel/)
+article on the Microsoft DevBlogs.
+
+**Solution code:** `/labs/agent-loop/004-testing-agents/`
