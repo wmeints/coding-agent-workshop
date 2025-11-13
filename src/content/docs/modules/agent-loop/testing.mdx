@@ -79,7 +79,8 @@ factory class that generates test objects like fake kernels and mock chat respon
    can test the agent implementation.
 
 3. Install the Moq package to help mock dependencies. Use `dotnet add package Moq` to
-   add it to your test project.
+   add it to your test project or use the built-in package management function of your
+   IDE.
 
 4. Delete the default `UnitTest1.cs` file that was created by the template, as you'll
    be creating your own test classes.
@@ -97,8 +98,22 @@ keeps your test code clean and reduces duplication.
    static utility class containing factory methods.
 
 2. Implement a `CreateTestKernel` method that accepts an `IChatCompletionService`
-   parameter and returns a configured `Kernel` instance. Use the [Kernel builder pattern](https://learn.microsoft.com/en-us/semantic-kernel/concepts/kernel)
+   parameter and returns a configured `Kernel` instance. Use the
+   [Kernel builder pattern](https://learn.microsoft.com/en-us/semantic-kernel/concepts/kernel)
    to create the kernel and register the chat completion service as a singleton.
+
+   ```csharp title="TestObjectFactory.cs"
+   public class TestObjectFactory
+   {
+      public static Kernel CreateTestKernel(IChatCompletionService mockChatCompletionService)
+      {
+         var kernelBuilder = Kernel.CreateBuilder();
+         kernelBuilder.Services.AddSingleton(mockChatCompletionService);
+
+         return kernelBuilder.Build();
+      }
+   }
+   ```
 
 3. Create a `CreateFakeToolCall` method that returns a `ChatMessageContent` object
    containing a function call. This method should accept:
@@ -113,21 +128,88 @@ keeps your test code clean and reduces duplication.
    item. Return a new `ChatMessageContent` with `AuthorRole.Assistant` and the items
    collection.
 
+   ```csharp title="TestObjectFactory.cs" ins={11-28}
+   public class TestObjectFactory
+   {
+      public static Kernel CreateTestKernel(IChatCompletionService mockChatCompletionService)
+      {
+         var kernelBuilder = Kernel.CreateBuilder();
+         kernelBuilder.Services.AddSingleton(mockChatCompletionService);
+
+         return kernelBuilder.Build();
+      }
+
+      public static ChatMessageContent CreateFakeToolCall(string pluginName, string toolName, string? content = null, Dictionary<string, object?>? arguments = null)
+      {
+         var chatMessageParts = new ChatMessageContentItemCollection();
+         
+         var functionCallContent = new FunctionCallContent(
+               toolName,
+               pluginName,
+               arguments: new KernelArguments(arguments ?? new Dictionary<string, object?>()));
+         
+         chatMessageParts.Add(functionCallContent);
+
+         if (content != null)
+         {
+               chatMessageParts.Add(new TextContent(content));
+         }
+         
+         return new ChatMessageContent(AuthorRole.Assistant, chatMessageParts);
+      }
+   }
+   ```
+
 4. Add a `CreateFakeAgentResponse` method that accepts a string content parameter and
    returns a simple `ChatMessageContent` object with `AuthorRole.Assistant` and the
    provided content. This simulates a text response from the agent without any tool calls.
 
+   ```csharp title="TestObjectFactory.cs" ins={30-33}
+   public class TestObjectFactory
+   {
+      public static Kernel CreateTestKernel(IChatCompletionService mockChatCompletionService)
+      {
+         var kernelBuilder = Kernel.CreateBuilder();
+         kernelBuilder.Services.AddSingleton(mockChatCompletionService);
+
+         return kernelBuilder.Build();
+      }
+
+      public static ChatMessageContent CreateFakeToolCall(string pluginName, string toolName, string? content = null, Dictionary<string, object?>? arguments = null)
+      {
+         var chatMessageParts = new ChatMessageContentItemCollection();
+         
+         var functionCallContent = new FunctionCallContent(
+               toolName,
+               pluginName,
+               arguments: new KernelArguments(arguments ?? new Dictionary<string, object?>()));
+         
+         chatMessageParts.Add(functionCallContent);
+
+         if (content != null)
+         {
+               chatMessageParts.Add(new TextContent(content));
+         }
+         
+         return new ChatMessageContent(AuthorRole.Assistant, chatMessageParts);
+      }
+
+      public static  ChatMessageContent CreateFakeAgentResponse(string content)
+      {
+         return new ChatMessageContent(AuthorRole.Assistant, content);
+      }
+   }
+   ```
+
 </Steps>
 
-<Aside type="tip">
-The TestObjectFactory encapsulates the complexity of creating test doubles for Semantic
-Kernel objects. By centralizing this logic, you make your tests more maintainable and
-easier to read.
-</Aside>
+The `TestObjectFactory` encapsulates the complexity of creating test doubles for
+Semantic Kernel objects. By centralizing this logic, we make the tests more
+maintainable and easier to read.
 
 ## Testing tool calling functionality
 
-Now that you have helper utilities for creating test objects, you'll write your first
+Now that we have helper utilities for creating test objects, you'll write your first
 test to verify the agent correctly invokes tools when the LLM requests them.
 
 ### Creating the test class
@@ -141,26 +223,86 @@ test to verify the agent correctly invokes tools when the LLM requests them.
    `[Fact]` attribute. This test will verify that when the LLM returns a function call,
    the agent properly invokes that function.
 
+   ```csharp title="AgentTests.cs"
+   public class AgentTests
+   {
+      [Fact]
+      public async Task Test_PromptCausingToolCall_InvokesTool()
+      {
+         // Test implementation will go here
+      }
+   }
+   ```
+
 </Steps>
 
 ### Mocking the chat completion service
 
-The key to testing the agent loop is controlling what the LLM returns. You'll use Moq
-to create a mock chat completion service that returns predefined responses.
+The key to testing the agent loop is controlling what the LLM returns. We can
 
 <Steps>
 
 1. Create a mock `IAgentCallbacks` object using Moq. This will allow you to verify that
    the agent reports function calls correctly.
 
+   ```csharp title="AgentTests.cs" ins={6}
+   public class AgentTests
+   {
+      [Fact]
+      public async Task Test_PromptCausingToolCall_InvokesTool()
+      {
+         var agentCallbacks = new Mock<IAgentCallbacks>();
+      }
+   }
+   ```
+
 2. Create a mock `IChatCompletionService` using Moq. This will simulate the LLM's
    responses.
+
+   ```csharp title="AgentTests.cs" ins={7}
+   public class AgentTests
+   {
+      [Fact]
+      public async Task Test_PromptCausingToolCall_InvokesTool()
+      {
+         var agentCallbacks = new Mock<IAgentCallbacks>();
+         var chatCompletionService = new Mock<IChatCompletionService>();
+      }
+   }
+   ```
 
 3. Use `TestObjectFactory.CreateTestKernel` to create a kernel with your mock chat
    completion service.
 
+   ```csharp title="AgentTests.cs" ins={8}
+   public class AgentTests
+   {
+      [Fact]
+      public async Task Test_PromptCausingToolCall_InvokesTool()
+      {
+         var agentCallbacks = new Mock<IAgentCallbacks>();
+         var chatCompletionService = new Mock<IChatCompletionService>();
+         var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      }
+   }
+   ```
+
 4. Instantiate the `Agent` class with the test kernel and a new `AgentInstructions`
    instance.
+
+   ```csharp title="AgentTests.cs" ins={9}
+   public class AgentTests
+   {
+      [Fact]
+      public async Task Test_PromptCausingToolCall_InvokesTool()
+      {
+         var agentCallbacks = new Mock<IAgentCallbacks>();
+         var chatCompletionService = new Mock<IChatCompletionService>();
+         var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+         var agent = new Agent(kernel, new AgentInstructions());
+      }
+   }
+   ```
 
 </Steps>
 
@@ -173,12 +315,54 @@ to create a mock chat completion service that returns predefined responses.
    nothing. Use `KernelFunctionFactory.CreateFromMethod` to create the function from
    a lambda expression.
 
+   ```csharp title="AgentTests.cs" ins={9-11}
+   [Fact]
+   public async Task Test_PromptCausingToolCall_InvokesTool()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+   }
+   ```
+
 2. Configure the mock chat completion service using `SetupSequence` on the
    `GetChatMessageContentsAsync` method. The sequence should return:
    - First call: A fake tool call (using `TestObjectFactory.CreateFakeToolCall`) for
      "TestPlugin.test_function"
    - Second call: A fake agent response (using `TestObjectFactory.CreateFakeAgentResponse`)
      with "All done!"
+
+   ```csharp title="AgentTests.cs" ins={13-23}
+   [Fact]
+   public async Task Test_PromptCausingToolCall_InvokesTool()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+      
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeToolCall("TestPlugin", "test_function")
+         ])
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+   }
+   ```
 
    This simulates the agent loop: first the LLM requests a tool, then after the tool
    executes, the LLM provides a final response.
@@ -197,9 +381,71 @@ response, simulating a realistic conversation flow.
 
 1. Invoke the agent with a test prompt and the mock callbacks object.
 
+   ```csharp title="AgentTests.cs" ins={25}
+   [Fact]
+   public async Task Test_PromptCausingToolCall_InvokesTool()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+      
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeToolCall("TestPlugin", "test_function")
+         ])
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+   }
+   ```
+
 2. Use `agentCallbacks.Verify` to assert that `ReportFunctionCallAsync` was called with
    the function name "test_function". Use `It.Is<string>()` to match the function name
    and `It.IsAny<>()` for other parameters you don't need to verify strictly.
+
+   ```csharp title="AgentTests.cs" ins={27-29}
+   [Fact]
+   public async Task Test_PromptCausingToolCall_InvokesTool()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+      
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeToolCall("TestPlugin", "test_function")
+         ])
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+
+      agentCallbacks.Verify(x => x.ReportFunctionCallAsync(
+         It.Is<string>(toolName => toolName == "test_function"),
+         It.IsAny<KernelArguments?>(), It.IsAny<object?>()));
+   }
+   ```
 
 </Steps>
 
@@ -218,20 +464,135 @@ response scenarios correctly.
 1. Create a new test method called `Test_PromptWithoutToolCall_ReturnsResponse` in your
    `AgentTests` class.
 
+   ```csharp title="AgentTests.cs"
+   [Fact]
+    public async Task Test_PromptWithoutToolCall_ReturnsResponse()
+    {
+        // Test implementation will go here
+    }
+   ```
+
 2. Set up the same mocks as before (agent callbacks, chat completion service, kernel,
    and agent instance), but this time skip adding any plugins to the kernel.
+
+   ```csharp
+   [Fact]
+    public async Task Test_PromptWithoutToolCall_ReturnsResponse()
+    {
+        var agentCallbacks = new Mock<IAgentCallbacks>();
+        var chatCompletionService = new Mock<IChatCompletionService>();
+        var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+        var agent = new Agent(kernel, new AgentInstructions());
+    }
+    ```
 
 3. Configure the mock chat completion service to return only a fake agent response
    (no tool calls). Use `Setup` instead of `SetupSequence` since there's only one
    response needed.
 
+   ```csharp title="AgentTests.cs" ins={9-16}
+   [Fact]
+    public async Task Test_PromptWithoutToolCall_ReturnsResponse()
+    {
+        var agentCallbacks = new Mock<IAgentCallbacks>();
+        var chatCompletionService = new Mock<IChatCompletionService>();
+        var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+        var agent = new Agent(kernel, new AgentInstructions());
+
+        chatCompletionService.Setup(x => x.GetChatMessageContentsAsync(
+                It.IsAny<ChatHistory>(),
+                It.IsAny<PromptExecutionSettings>(),
+                It.IsAny<Kernel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([
+                TestObjectFactory.CreateFakeAgentResponse("All done!")
+            ]);
+    }
+   ```
+
 4. Invoke the agent with a test prompt.
+
+   ```csharp title="AgentTests.cs" ins={18}
+   [Fact]
+   public async Task Test_PromptWithoutToolCall_ReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      chatCompletionService.Setup(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+   }
+    ```
 
 5. Verify that `ReportAgentResponseAsync` was called with the expected content
    ("All done!").
 
+   ```csharp title="AgentTests.cs" ins={20-21}
+   [Fact]
+   public async Task Test_PromptWithoutToolCall_ReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      chatCompletionService.Setup(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+
+      agentCallbacks.Verify(x => x.ReportAgentResponseAsync(
+         It.Is<string>(content => content == "All done!")));
+   }
+   ```
+
 6. Verify that `ReportFunctionCallAsync` was never called by using
    `Times.Never()` in your verification.
+
+   ```csharp title="AgentTests.cs" ins={23-25}
+   [Fact]
+   public async Task Test_PromptWithoutToolCall_ReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      chatCompletionService.Setup(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+
+      agentCallbacks.Verify(x => x.ReportAgentResponseAsync(
+         It.Is<string>(content => content == "All done!")));
+
+      agentCallbacks.Verify(x => x.ReportFunctionCallAsync(
+         It.IsAny<string>(), It.IsAny<KernelArguments?>(),
+         It.IsAny<object>()), Times.Never());
+   }
+   ```
 
 </Steps>
 
@@ -244,7 +605,32 @@ agent explains what it's doing while also requesting tool execution.
 
 1. Add a test method called `Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse`.
 
+   ```csharp
+   [Fact]
+   public async Task Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse()
+   {
+      
+   }
+   ```
+
 2. Reuse the setup pattern from the first test, including adding the test plugin.
+
+   ```csharp
+   [Fact]
+   public async Task Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+
+      // The rest of the test
+   }
+   ```
 
 3. Configure the mock chat completion service sequence to return:
    - First call: A fake tool call that includes both a function call and text content
@@ -252,20 +638,153 @@ agent explains what it's doing while also requesting tool execution.
      `CreateFakeToolCall`.
    - Second call: A fake agent response with "All done!"
 
+   ```csharp title="AgentTests.cs" ins={13-26}
+   [Fact]
+   public async Task Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeToolCall(
+                  "TestPlugin",
+                  "test_function",
+                  "Invoking the test function")
+         ])
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+   }
+   ```
+
 4. Invoke the agent with a test prompt.
+
+   ```csharp title="AgentTests.cs" ins={28}
+   [Fact]
+   public async Task Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeToolCall(
+                  "TestPlugin",
+                  "test_function",
+                  "Invoking the test function")
+         ])
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+   }
+   ```
 
 5. Verify that `ReportAgentResponseAsync` was called exactly twice (once for the content
    during the tool call, once for the final response). Use `Times.Exactly(2)`.
 
+   ```csharp title="AgentTests.cs" ins={30-31}
+   [Fact]
+   public async Task Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+            It.IsAny<ChatHistory>(),
+            It.IsAny<PromptExecutionSettings>(),
+            It.IsAny<Kernel>(),
+            It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+            TestObjectFactory.CreateFakeToolCall(
+                  "TestPlugin",
+                  "test_function",
+                  "Invoking the test function")
+         ])
+         .ReturnsAsync([
+            TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+
+      agentCallbacks.Verify(x => x.ReportAgentResponseAsync(
+         It.IsAny<string>()), Times.Exactly(2));
+   }
+   ```
+
 6. Verify that `ReportFunctionCallAsync` was called exactly once.
+
+   ```csharp title="AgentTests.cs" ins={33-34}
+   [Fact]
+   public async Task Test_PromptWithToolsAndContent_CallsToolAndReturnsResponse()
+   {
+      var agentCallbacks = new Mock<IAgentCallbacks>();
+      var chatCompletionService = new Mock<IChatCompletionService>();
+      var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
+      var agent = new Agent(kernel, new AgentInstructions());
+
+      kernel.Plugins.AddFromFunctions("TestPlugin", [
+         KernelFunctionFactory.CreateFromMethod(() => { }, "test_function")
+      ]);
+
+      chatCompletionService.SetupSequence(x => x.GetChatMessageContentsAsync(
+               It.IsAny<ChatHistory>(),
+               It.IsAny<PromptExecutionSettings>(),
+               It.IsAny<Kernel>(),
+               It.IsAny<CancellationToken>()))
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeToolCall(
+                  "TestPlugin",
+                  "test_function",
+                  "Invoking the test function")
+         ])
+         .ReturnsAsync([
+               TestObjectFactory.CreateFakeAgentResponse("All done!")
+         ]);
+
+      await agent.InvokeAsync("Test prompt", agentCallbacks.Object);
+
+      agentCallbacks.Verify(x => x.ReportAgentResponseAsync(
+         It.IsAny<string>()), Times.Exactly(2));
+
+      agentCallbacks.Verify(x => x.ReportFunctionCallAsync(
+         It.IsAny<string>(), It.IsAny<KernelArguments?>(), It.IsAny<object>()), Times.Once());
+   }
+   ```
 
 </Steps>
 
-<Aside type="tip">
-These three tests cover the main scenarios in the agent loop: tool calls only, text
-responses only, and mixed responses. This gives you confidence that the core agent
+The three tests we wrote cover the main scenarios in the agent loop: tool calls only,
+text responses only, and mixed responses. This gives you confidence that the core agent
 behavior works correctly without needing to call a real LLM.
-</Aside>
 
 ## Summary
 
