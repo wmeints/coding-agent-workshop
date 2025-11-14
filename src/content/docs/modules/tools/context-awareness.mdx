@@ -1,0 +1,137 @@
+---
+title: Adding context awareness
+description: This lab teaches you how to give the coding agent awareness of its surrounding by extending the instructions with template variables.
+---
+
+import { Aside, Card, Steps } from '@astrojs/starlight/components';
+
+In this lab we're going to make the agent more aware of the context it is
+running in. So far we've kept the instructions fairly basic and static, but
+that's not going to help us when we want to allow the agent to explore code
+bases and make changes.
+
+We'll use a prompt template rather than static instructions to help the agent
+with context about our project. For this we'll add two variables to the system
+instructions:
+
+- Operating System: The current operating system (Linux, Windows, MacOS)
+- Current Directory: The current working directory of the agent
+
+## Lab files
+
+- **Starter:** [labs/agent-loop/004-testing-agents](/labs/agent-loop/004-testing-agents)
+- **Solution:** [labs/tools/001-context-awareness](/labs/tools/001-context-awareness)
+
+## Create the AgentContext class
+
+The agent needs to know about its operating environment to execute commands
+correctly. Let's create a context class to capture this information.
+
+<Steps>
+
+1. Create a new file called `AgentContext.cs` in the `CodingAgent` project.
+
+2. Add two properties to the `AgentContext` class:
+   - `WorkingDirectory` (string) - stores the current working directory
+   - `OperatingSystem` (string) - stores the name of the operating system
+
+3. Add a static factory method called `Create` that accepts an optional
+   `workingDirectory` parameter. This method should:
+   - Detect the current operating system using the `System.OperatingSystem`
+     class methods (`IsWindows()`, `IsLinux()`, `IsMacOS()`)
+   - Set the `OperatingSystem` property to "Windows", "Linux", "MacOS", or
+     "Unknown"
+   - Use the provided `workingDirectory` parameter, or fall back to
+     `Directory.GetCurrentDirectory()` if not provided
+   - Return a new instance of `AgentContext` with these values
+
+4. Update the `IAgentInstructions` interface to accept an `AgentContext`
+   parameter in the `InjectAsync` method.
+
+5. Update the `Agent` class constructor to accept an `AgentContext` parameter
+   and store it as a field.
+
+6. Modify the `Agent` class to pass the context to
+   `_agentInstructions.InjectAsync()`.
+
+7. Update `Program.cs` to create an `AgentContext` using the factory method and
+   pass it to the `Agent` constructor.
+
+</Steps>
+
+## Update the agent instructions
+
+Now that we have context information, we need to include it in the agent's
+system instructions using template variables.
+
+<Steps>
+
+1. Create a new directory called `Resources` in the `CodingAgent` project.
+
+2. Create a file called `AgentSystemInstructions.txt` inside the `Resources`
+   directory.
+
+3. Write system instructions that include Handlebars template variables for the
+   operating system and working directory. Use the syntax `{{variable_name}}` to
+   reference template variables. For example:
+   ```
+   Operating system: {{operating_system}}
+   Current working directory: {{working_directory}}
+   ```
+
+4. Update the project file (`CodingAgent.csproj`) to include the instructions
+   file as an embedded resource. Refer to the [Embedded Resources
+   documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/create-resource-files)
+   to learn how to configure this.
+
+5. Modify the `AgentInstructions` class to use the Handlebars template engine.
+   In the `ReadSystemInstructionsAsync` method:
+   - Create a `PromptTemplateConfig` with the template loaded from the embedded resource
+   - Set the `TemplateFormat` to "handlebars"
+   - Create a `HandlebarsPromptTemplateFactory` instance (set
+     `AllowDangerouslySetContent = true` to allow HTML-like content)
+   - Use the factory to create a prompt template from the configuration
+   - Render the template with `KernelArguments` containing the context values
+     (`operating_system` and `working_directory`)
+
+6. Refer to the [Semantic Kernel Prompt Templates
+   documentation](https://learn.microsoft.com/en-us/semantic-kernel/prompts/prompt-template-syntax)
+   to understand how to work with prompt templates and template formats.
+
+7. Add a reference to the `Microsoft.SemanticKernel.PromptTemplates.Handlebars` NuGet package to your project.
+
+</Steps>
+
+## Add unit-tests for the instructions
+
+Let's verify that the instructions are rendered correctly with the context information.
+
+<Steps>
+
+1. Create a new test file called `AgentInstructionsTests.cs` in the `CodingAgent.Tests` project.
+
+2. Add a test method called `InjectAsync_ShouldIncludeOperatingSystemAndWorkingDirectory` that:
+   - Creates an instance of `AgentInstructions`
+   - Creates an `AgentContext` with specific test values (e.g., WorkingDirectory = "/home/user/projects", OperatingSystem = "Linux")
+   - Creates a minimal `Kernel` instance using `Kernel.CreateBuilder().Build()`
+   - Creates an empty `ChatHistory`
+   - Calls `InjectAsync` to inject the instructions
+   - Asserts that the chat history contains exactly one message
+   - Asserts that the message role is `AuthorRole.System`
+   - Asserts that the message content includes both the working directory and operating system values
+
+3. Run the tests using `dotnet test` to verify the instructions are rendered correctly.
+
+</Steps>
+
+## Summary
+
+In this lab, you made the coding agent context-aware by:
+
+- Creating an `AgentContext` class to capture the operating system and working directory
+- Implementing a factory method to automatically detect the operating environment
+- Converting the static agent instructions to use Handlebars templates with template variables
+- Embedding the instruction template as a resource in your project
+- Writing unit tests to verify that context information is correctly rendered in the agent's instructions
+
+The agent now has awareness of its environment, which will be essential when adding shell execution capabilities in future labs. You can find the complete solution in `/home/wmeints/Work/coding-agent-workshop/labs/tools/001-context-awareness/solution`.

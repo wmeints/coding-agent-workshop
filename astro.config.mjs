@@ -81,6 +81,7 @@ export default defineConfig({
 					label: "Adding Coding Tools",
 					items: [
 						{ label: "Overview", slug: "modules/tools/overview" },
+						{ label: "Adding context awareness", slug: "modules/tools/context-awareness" },
 						{ label: "Building the Shell Plugin", slug: "modules/tools/building-the-shell-plugin" },
 						{ label: "Building the Text Editor Plugin", slug: "modules/tools/building-the-text-editor-plugin" },
 						{ label: "Integrating Plugins into the Agent", slug: "modules/tools/integrating-plugins-into-agent" },
