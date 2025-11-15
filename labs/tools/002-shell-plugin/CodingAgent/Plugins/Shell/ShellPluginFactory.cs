@@ -8,7 +8,7 @@ public class ShellPluginFactory
     {
         if (OperatingSystem.IsWindows())
         {
-            KernelPluginFactory.CreateFromObject(new WindowsShellPlugin());
+            return KernelPluginFactory.CreateFromObject(new WindowsShellPlugin());
         }
 
         if (OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())
