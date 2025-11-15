@@ -5,12 +5,12 @@ description: This tutorial teaches you how to build a Shell Plugin for the codin
 
 import { Steps } from '@astrojs/starlight/components';
 
-In this lab, you will extend your coding agent by adding a shell plugin that
+In this lab, we'll extend our coding agent by adding a shell plugin that
 allows the agent to execute commands on the system. This capability is essential
 for a coding agent, enabling it to interact with the file system, run build
 tools, execute tests, and perform other development tasks.
 
-You'll learn how to create platform-specific plugins that adapt to different
+We'll learn how to create platform-specific plugins that adapt to different
 operating systems (Windows, macOS, and Linux) and how to register these plugins
 with Semantic Kernel.
 
@@ -21,13 +21,13 @@ with Semantic Kernel.
 
 ## Create the Unix shell plugin
 
-The first plugin you'll build executes commands using Bash on Unix-based systems
+The first plugin we'll build executes commands using Bash on Unix-based systems
 (macOS and Linux). This plugin will handle process execution, environment
 variable configuration, and output collection.
 
 <Steps>
 
-1. Create a new directory `Plugins/Shell` in your CodingAgent project.
+1. Create a new directory `Plugins/Shell` in the CodingAgent project.
 
 2. Create a new class `UnixShellPlugin` in the `Plugins/Shell` directory.
 
@@ -63,7 +63,7 @@ variable configuration, and output collection.
    }
    ```
 
-4. In the function description, include the instructions shown below in the `Description` attribute.
+4. In the function description, let's include the instructions shown below in the `Description` attribute.
    These are important to help the agent understand how to properly use the shell on Linux/MacOS.
 
    ```csharp title="Plugins/Shell/UnixShellPlugin.cs" ins={5-13} del={4}
@@ -238,7 +238,7 @@ variable configuration, and output collection.
 
 ## Create the Windows shell plugin
 
-Next, you'll create a similar plugin for Windows systems that uses CMD instead of Bash.
+Next, we'll create a similar plugin for Windows systems that uses CMD instead of Bash.
 
 <Steps>
 
@@ -289,7 +289,7 @@ Next, you'll create a similar plugin for Windows systems that uses CMD instead o
    process.Start();
    ```
 
-4. Use the same approach for environment variables, but adapt the syntax for Windows batch commands.
+4. Let's use the same approach for environment variables, but adapt the syntax for Windows batch commands.
 
    ```csharp
    var environmentVariables = new Dictionary<string, string?>
@@ -307,7 +307,7 @@ Next, you'll create a similar plugin for Windows systems that uses CMD instead o
 
 ## Create the shell plugin factory
 
-To ensure the correct plugin is used based on the operating system, you'll create a factory class that
+To ensure the correct plugin is used based on the operating system, we'll create a factory class that
 selects the appropriate plugin implementation.
 
 <Steps>
@@ -372,14 +372,14 @@ selects the appropriate plugin implementation.
 
 ## Register the shell plugin
 
-Finally, you'll integrate the shell plugin into your agent so it can use the shell functionality.
+Finally, we'll integrate the shell plugin into our agent so it can use the shell functionality.
 
 <Steps>
 
-1. Open the `Agent.cs` file in your CodingAgent project.
+1. Open the `Agent.cs` file in the CodingAgent project.
 
 2. In the constructor of the `Agent` class, after initializing the kernel and other dependencies,
-   register the shell plugin by calling `_kernel.Plugins.Add(ShellPluginFactory.Create())`.
+   let's register the shell plugin by calling `_kernel.Plugins.Add(ShellPluginFactory.Create())`.
 
 3. Add the necessary using statement for the `CodingAgent.Plugins.Shell` namespace.
 
@@ -387,11 +387,11 @@ Finally, you'll integrate the shell plugin into your agent so it can use the she
 
 ## Test the shell plugin
 
-Now that you've implemented the shell plugin, test it to ensure the agent can execute commands.
+Now that we've implemented the shell plugin, let's test it to ensure the agent can execute commands.
 
 <Steps>
 
-1. Run your agent application.
+1. Run the agent application.
 
 2. Ask the agent to execute a simple command like "List the files in the current directory".
 
@@ -405,12 +405,12 @@ Now that you've implemented the shell plugin, test it to ensure the agent can ex
 
 ## Summary
 
-In this lab, you built a cross-platform shell plugin for your coding agent. You created platform-specific
+In this lab, we built a cross-platform shell plugin for our coding agent. We created platform-specific
 implementations for Unix and Windows systems, used a factory pattern to select the correct implementation,
-and registered the plugin with Semantic Kernel. This enables your agent to execute commands, interact with
+and registered the plugin with Semantic Kernel. This enables our agent to execute commands, interact with
 the file system, and perform development tasks.
 
-Key concepts you learned:
+Key concepts we learned:
 
 - Creating kernel functions with the `KernelFunction` attribute
 - Using the `Description` attribute to guide agent behavior
