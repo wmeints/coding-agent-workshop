@@ -32,8 +32,17 @@ correctly. Let's create a context class to capture this information.
 1. Create a new file called `AgentContext.cs` in the `CodingAgent` project.
 
 2. Add two properties to the `AgentContext` class:
+
    - `WorkingDirectory` (string) - stores the current working directory
    - `OperatingSystem` (string) - stores the name of the operating system
+
+   ```csharp title="AgentContext.cs" ins={3-4}
+   public class AgentContext
+   {
+      public string WorkingDirectory { get; set; } = "";
+      public string OperatingSystem { get; set; } = "Unknown";
+   }
+   ```
 
 3. Add a static factory method called `Create` that accepts an optional
    `workingDirectory` parameter. This method should:
@@ -45,46 +54,101 @@ correctly. Let's create a context class to capture this information.
      `Directory.GetCurrentDirectory()` if not provided
    - Return a new instance of `AgentContext` with these values
 
-4. Update the `IAgentInstructions` interface to accept an `AgentContext`
-   parameter in the `InjectAsync` method.
+   ```csharp title="AgentContext.cs" ins={6-28}
+   public class AgentContext
+   {
+      public string WorkingDirectory { get; set; } = "";
+      public string OperatingSystem { get; set; } = "Unknown";
 
-5. Update the `Agent` class constructor to accept an `AgentContext` parameter
+      public static AgentContext Create(string? workingDirectory = null)
+      {
+         string operatingSystem = "Unknown";
+         
+         if (System.OperatingSystem.IsWindows())
+         {
+               operatingSystem = "Windows";    
+         }
+         else if (System.OperatingSystem.IsLinux())
+         {
+               operatingSystem = "Linux";
+         }
+         else if (System.OperatingSystem.IsMacOS())
+         {
+               operatingSystem = "MacOS";
+         }
+
+         return new AgentContext
+         {
+               WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory(),
+               OperatingSystem = operatingSystem,
+         };
+      }
+   }
+   ```
+
+4. Update the `Agent` class constructor to accept an `AgentContext` parameter
    and store it as a field.
 
-6. Modify the `Agent` class to pass the context to
-   `_agentInstructions.InjectAsync()`.
+   ```diff lang="csharp" title="Agent.cs"
+   public class Agent
+   {
+      private ChatHistory _chatHistory;
+      private readonly Kernel _kernel;
+      private readonly IAgentInstructions _agentInstructions;
+   +  private readonly AgentContext _context;
 
-7. Update `Program.cs` to create an `AgentContext` using the factory method and
+   -  public Agent(Kernel kernel, IAgentInstructions agentInstructions)
+   +  public Agent(Kernel kernel, AgentContext context, IAgentInstructions agentInstructions)
+      {
+         _chatHistory = new ChatHistory();
+         _kernel = kernel;
+   +     _context = context;
+         _agentInstructions = agentInstructions;
+
+         _kernel.Plugins.Add(ShellPluginFactory.Create());
+      }
+
+      // The rest of the code
+   }
+
+5. Update `Program.cs` to create an `AgentContext` using the factory method and
    pass it to the `Agent` constructor.
+
+   ```diff lang="csharp" title="Program.cs"
+   var kernel = kernelBuilder.Build();
+   var instructions = new AgentInstructions();
+   + var context = AgentContext.Create();
+   - var agent = new Agent(kernel, instructions);
+   + var agent = new Agent(kernel, context, instructions);
+   ```
 
 </Steps>
 
 ## Update the agent instructions
 
-Now that we have context information, we need to include it in the agent's
-system instructions using template variables.
+We're going to need a way to tell the agent about the agent context. We'll
+extend the agent instructions component we created earlier to use a prompt
+template with template variables for the operating system and working directory.
 
 <Steps>
 
-1. Create a new directory called `Resources` in the `CodingAgent` project.
+1. Add a reference to the `Microsoft.SemanticKernel.PromptTemplates.Handlebars`
+   NuGet package to your project.
 
-2. Create a file called `AgentSystemInstructions.txt` inside the `Resources`
-   directory.
+1. Update the `IAgentInstructions` interface to accept an `AgentContext`
+   parameter in the `InjectAsync` method.
 
-3. Write system instructions that include Handlebars template variables for the
-   operating system and working directory. Use the syntax `{{variable_name}}` to
-   reference template variables. For example:
+
+   ```diff lang="csharp" title="AgentInstructions.cs"
+   public interface IAgentInstructions
+   {
+   -   Task InjectAsync(Kernel kernel, ChatHistory chatHistory);
+   +   Task InjectAsync(Kernel kernel, AgentContext context, ChatHistory chatHistory);
+      void Remove(ChatHistory chatHistory);
+   }
    ```
-   Operating system: {{operating_system}}
-   Current working directory: {{working_directory}}
-   ```
 
-4. Update the project file (`CodingAgent.csproj`) to include the instructions
-   file as an embedded resource. Refer to the [Embedded Resources
-   documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/create-resource-files)
-   to learn how to configure this.
-
-5. Modify the `AgentInstructions` class to use the Handlebars template engine.
+1. Modify the `AgentInstructions` class to use the Handlebars template engine.
    In the `ReadSystemInstructionsAsync` method:
    - Create a `PromptTemplateConfig` with the template loaded from the embedded resource
    - Set the `TemplateFormat` to "handlebars"
@@ -94,11 +158,103 @@ system instructions using template variables.
    - Render the template with `KernelArguments` containing the context values
      (`operating_system` and `working_directory`)
 
-6. Refer to the [Semantic Kernel Prompt Templates
-   documentation](https://learn.microsoft.com/en-us/semantic-kernel/prompts/prompt-template-syntax)
-   to understand how to work with prompt templates and template formats.
+   ```diff lang="csharp" title="AgentInstructions.cs"  
+   using Microsoft.SemanticKernel;
+   using Microsoft.SemanticKernel.ChatCompletion;
+   +using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
+   
+   namespace CodingAgent;
+   
+   public class AgentInstructions : IAgentInstructions
+   {
+   -    public async Task InjectAsync(ChatHistory chatHistory)
+   +    public async Task InjectAsync(Kernel kernel, AgentContext context, ChatHistory chatHistory)
+      {
+   -        var systemPrompt = await ReadSystemInstructionsAsync();
+   +        var systemPrompt = await ReadSystemInstructionsAsync(kernel, context);
+            chatHistory.Insert(0, new ChatMessageContent(AuthorRole.System, systemPrompt));
+      }
+   
+      public void Remove(ChatHistory chatHistory)
+      {
+            if (chatHistory.Count > 0 && chatHistory[0].Role == AuthorRole.System)
+            {
+               chatHistory.RemoveAt(0);
+            }
+      }
+   
+   -    private async Task<string> ReadSystemInstructionsAsync()
+   +    private async Task<string> ReadSystemInstructionsAsync(Kernel kernel, AgentContext context)
+      {
+   -        var resourceName = "CodingAgent.Resources.AgentSystemInstructions.txt";
+   -        var instructions = EmbeddedResource.Read(resourceName);
+   -        return await Task.FromResult(instructions);
+   +        var promptTemplateConfig = new PromptTemplateConfig
+   +        {
+   +            Template = EmbeddedResource.Read("CodingAgent.Resources.AgentSystemInstructions.txt"),
+   +            TemplateFormat = "handlebars"
+   +        };
+   +
+   +        var promptTemplateFactory = new HandlebarsPromptTemplateFactory
+   +        {
+   +            AllowDangerouslySetContent = true
+   +        };
+   +        
+   +        var promptTemplate = promptTemplateFactory.Create(promptTemplateConfig);
+   +
+   +        return await promptTemplate.RenderAsync(kernel, new KernelArguments
+   +        {
+   +            ["operating_system"] = context.OperatingSystem,
+   +            ["working_directory"] = context.WorkingDirectory
+   +        });
+      }
+   }
 
-7. Add a reference to the `Microsoft.SemanticKernel.PromptTemplates.Handlebars` NuGet package to your project.
+   ```
+
+1. Modify the `Agent` class to pass the `AgentContext` and `Kernel` instance to
+   the `InjectAsync` method when injecting the instructions.
+
+   ```diff lang="csharp"  title="Agent.cs"
+   public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
+   {
+         var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
+   -     await _agentInstructions.InjectAsync(_chatHistory);
+   +     await _agentInstructions.InjectAsync(_kernel, _context, _chatHistory);
+         _chatHistory.AddUserMessage(prompt);
+
+         while (true)
+         {
+            var promptExecutionSettings = new AzureOpenAIPromptExecutionSettings()
+            {
+               FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false),
+            };
+
+            var response = await chatCompletionService.GetChatMessageContentAsync(
+               _chatHistory, promptExecutionSettings);
+
+            _chatHistory.Add(response);
+
+            if (!string.IsNullOrEmpty(response.Content))
+            {
+               await callbacks.ReportAgentResponseAsync(response.Content);
+            }
+
+            var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
+
+            if (!functionCalls.Any())
+            {
+               // End the agent turn when there are no more function calls to process.
+               break;
+            }
+
+            await HandleFunctionCalls(functionCalls, callbacks);
+         }
+
+         _agentInstructions.Remove(_chatHistory);
+   }
+   ```
 
 </Steps>
 
@@ -110,6 +266,13 @@ Let's verify that the instructions are rendered correctly with the context infor
 
 1. Create a new test file called `AgentInstructionsTests.cs` in the `CodingAgent.Tests` project.
 
+   ```csharp title="AgentInstructionsTests.cs"
+   public class AgentInstructionsTests
+   {
+      
+   }
+   ```
+
 2. Add a test method called `InjectAsync_ShouldIncludeOperatingSystemAndWorkingDirectory` that:
    - Creates an instance of `AgentInstructions`
    - Creates an `AgentContext` with specific test values (e.g., WorkingDirectory = "/home/user/projects", OperatingSystem = "Linux")
@@ -119,6 +282,32 @@ Let's verify that the instructions are rendered correctly with the context infor
    - Asserts that the chat history contains exactly one message
    - Asserts that the message role is `AuthorRole.System`
    - Asserts that the message content includes both the working directory and operating system values
+
+   ```csharp title="AgentInstructionsTests.cs" ins={4-22}
+   [Fact]
+   public async Task InjectAsync_ShouldIncludeOperatingSystemAndWorkingDirectory()
+   {
+      // Arrange
+      var agentInstructions = new AgentInstructions();
+      var context = new AgentContext
+      {
+            WorkingDirectory = "/home/user/projects",
+            OperatingSystem = "Linux"
+      };
+
+      var kernel = Kernel.CreateBuilder().Build();
+      var chatHistory = new ChatHistory();
+
+      // Act
+      await agentInstructions.InjectAsync(kernel, context, chatHistory);
+
+      // Assert
+      Assert.Single(chatHistory);
+      Assert.Equal(AuthorRole.System, chatHistory[0].Role);
+      Assert.Contains("/home/user/projects", chatHistory[0].Content);
+      Assert.Contains("Linux", chatHistory[0].Content);
+   }
+   ```
 
 3. Run the tests using `dotnet test` to verify the instructions are rendered correctly.
 
