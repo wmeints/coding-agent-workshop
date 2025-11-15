@@ -2,3 +2,420 @@
 title: Building the Shell Plugin
 description: This tutorial teaches you how to build a Shell Plugin for the coding agent.
 ---
+
+import { Steps } from '@astrojs/starlight/components';
+
+In this lab, you will extend your coding agent by adding a shell plugin that
+allows the agent to execute commands on the system. This capability is essential
+for a coding agent, enabling it to interact with the file system, run build
+tools, execute tests, and perform other development tasks.
+
+You'll learn how to create platform-specific plugins that adapt to different
+operating systems (Windows, macOS, and Linux) and how to register these plugins
+with Semantic Kernel.
+
+## Lab files
+
+- **Starter:** [labs/tools/001-context-awareness](/labs/tools/001-context-awareness)
+- **Solution:** [labs/tools/002-shell-plugin](/labs/tools/002-shell-plugin)
+
+## Creating the Unix shell plugin
+
+The first plugin you'll build executes commands using Bash on Unix-based systems
+(macOS and Linux). This plugin will handle process execution, environment
+variable configuration, and output collection.
+
+<Steps>
+
+1. Create a new directory `Plugins/Shell` in your CodingAgent project.
+
+2. Create a new class `UnixShellPlugin` in the `Plugins/Shell` directory.
+
+   ```csharp title="Plugins/Shell/UnixShellPlugin.cs"
+   using System.ComponentModel;
+   using System.Diagnostics;
+   using System.Text;
+   using Microsoft.SemanticKernel;
+
+   namespace CodingAgent.Plugins.Shell;
+
+   public class UnixShellPlugin
+   {
+
+   }
+   ```
+
+3. Add a kernel function named `shell` to the `UnixShellPlugin` class that accepts a `command` parameter.
+   Use the `KernelFunction` attribute to mark the method and the `Description` attribute to provide
+   instructions to the agent. Refer to the [Semantic Kernel documentation on creating plugins from
+   classes](https://learn.microsoft.com/en-us/semantic-kernel/concepts/plugins/using-the-kernelfunction-decorator)
+   for guidance on decorating methods as kernel functions.
+
+   ```csharp title="Plugins/Shell/UnixShellPlugin.cs" ins={3-8}
+   public class UnixShellPlugin
+   {
+      [KernelFunction("shell")]
+      [Description("")]
+      public async Task<string> ExecuteCommandAsync(string command)
+      {
+
+      }
+   }
+   ```
+
+4. In the function description, include the instructions shown below in the `Description` attribute.
+   These are important to help the agent understand how to properly use the shell on Linux/MacOS.
+
+   ```csharp title="Plugins/Shell/UnixShellPlugin.cs" ins={5-13} del={4}
+   public class UnixShellPlugin
+   {
+      [KernelFunction("shell")]
+      [Description("")]
+      [Description(
+         """
+         You can use the shell tool to execute any command. It can be used to solve a wide range of problems.
+         
+         **Important:** Only use ripgrep - `rg` - for searching through files. Other solutions produce output that's too big to handle.
+         Use `rg --files | rg <filename>` to locate files. Use `rg <regex> -l` to search for specific patterns in files.
+         
+         Chain multiple commands using `&&` and avoid newlines in the command. For example `cd example && rg MyClass`.)]
+         """)]
+      public async Task<string> ExecuteCommandAsync(string command)
+      {
+
+      }
+   }
+   ```
+
+5. Implement the kernel function to execute commands using `/bin/bash -c`. Use the `Process` class
+   from `System.Diagnostics` to start the process. Configure the process to:
+   - Redirect standard output and standard error
+   - Use `/bin/bash` as the shell
+   - Pass the command with the `-c` flag
+   - Set `UseShellExecute` to false and `CreateNoWindow` to true
+
+   ```csharp title="Plugins/Shell/UnixShellPlugin.cs" ins={8-28}
+   [KernelFunction("shell")]
+   [Description(
+      """
+      ... (same as above) ...
+      """)]
+   public async Task<string> ExecuteCommandAsync(string command)
+   {
+      var processStartInfo = new ProcessStartInfo
+      {
+         FileName = "/bin/bash",
+         Arguments = $"-c \"{command}\"",
+         RedirectStandardOutput = true,
+         RedirectStandardError = true,
+         UseShellExecute = false,
+         CreateNoWindow = true,
+      };
+      
+      foreach(var (key, value) in environmentVariables)
+      {
+         processStartInfo.Environment[key] = value;
+      }
+      
+      var process = new Process
+      {
+         StartInfo = processStartInfo
+      };
+
+      process.Start();
+   }
+   ```
+
+6. Configure environment variables to disable interactive tools that might block the agent:
+   - Set `EDITOR` and `VISUAL` to display an error message and exit
+   - Set `GIT_PAGER` to `cat` to disable paging in Git
+   - Set `GIT_TERMINAL_PROMPT` to `0` to disable Git's interactive prompts
+   - Set `GIT_SEQUENCE_EDITOR` and `GIT_EDITOR` to display error messages
+
+   ```csharp title="Plugins/Shell/UnixShellPlugin.cs" ins={8-16}
+   [KernelFunction("shell")]
+   [Description(
+      """
+      ... (same as above) ...
+      """)]
+   public async Task<string> ExecuteCommandAsync(string command)
+   {
+      var environmentVariables = new Dictionary<string, string?>
+      {
+         ["EDITOR"] = "sh -c 'echo \\\"Interactive editor not available in this environment.\\\" >&2; exit 1'",
+         ["VISUAL"] = "sh -c 'echo \\\"Interactive editor not available in this environment.\\\" >&2; exit 1'",
+         ["GIT_PAGER"] = "cat",
+         ["GIT_TERMINAL_PROMPT"] = "0",
+         ["GIT_SEQUENCE_EDITOR"] = "sh -c 'echo \\\"Interactive Git commands are not supported in this environment.\\\" >&2; exit 1'",
+         ["GIT_EDITOR"] = "sh -c 'echo \\\"Interactive Git commands are not supported in this environment.\\\" >&2; exit 1'",
+      };
+
+      var processStartInfo = new ProcessStartInfo
+      {
+         FileName = "/bin/bash",
+         Arguments = $"-c \"{command}\"",
+         RedirectStandardOutput = true,
+         RedirectStandardError = true,
+         UseShellExecute = false,
+         CreateNoWindow = true,
+      };
+      
+      foreach(var (key, value) in environmentVariables)
+      {
+         processStartInfo.Environment[key] = value;
+      }
+      
+      var process = new Process
+      {
+         StartInfo = processStartInfo
+      };
+
+      process.Start();
+   }
+   ```
+
+7. Capture both standard output and standard error from the process, wait for the process to complete,
+   and return the combined output as a string.
+
+   ```csharp title="Plugins/Shell/UnixShellPlugin.cs" ins={40-54}
+   [KernelFunction("shell")]
+   [Description(
+      """
+      ... (same as above) ...
+      """)]
+   public async Task<string> ExecuteCommandAsync(string command)
+   {
+      var environmentVariables = new Dictionary<string, string?>
+      {
+         ["EDITOR"] = "sh -c 'echo \\\"Interactive editor not available in this environment.\\\" >&2; exit 1'",
+         ["VISUAL"] = "sh -c 'echo \\\"Interactive editor not available in this environment.\\\" >&2; exit 1'",
+         ["GIT_PAGER"] = "cat",
+         ["GIT_TERMINAL_PROMPT"] = "0",
+         ["GIT_SEQUENCE_EDITOR"] = "sh -c 'echo \\\"Interactive Git commands are not supported in this environment.\\\" >&2; exit 1'",
+         ["GIT_EDITOR"] = "sh -c 'echo \\\"Interactive Git commands are not supported in this environment.\\\" >&2; exit 1'",
+      };
+
+      var processStartInfo = new ProcessStartInfo
+      {
+         FileName = "/bin/bash",
+         Arguments = $"-c \"{command}\"",
+         RedirectStandardOutput = true,
+         RedirectStandardError = true,
+         UseShellExecute = false,
+         CreateNoWindow = true,
+      };
+      
+      foreach(var (key, value) in environmentVariables)
+      {
+         processStartInfo.Environment[key] = value;
+      }
+      
+      var process = new Process
+      {
+         StartInfo = processStartInfo
+      };
+
+      process.Start();
+      
+      var output = await process.StandardOutput.ReadToEndAsync();
+      var error = await process.StandardError.ReadToEndAsync();
+
+      await process.WaitForExitAsync();
+
+      var outputBuilder = new StringBuilder();
+      
+      outputBuilder.AppendLine(output);
+
+      if (!string.IsNullOrEmpty(error))
+      {
+         outputBuilder.AppendLine(error);
+      }
+
+      return outputBuilder.ToString();
+   }
+   ```
+</Steps>
+
+## Creating the Windows shell plugin
+
+Next, you'll create a similar plugin for Windows systems that uses CMD instead of Bash.
+
+<Steps>
+
+1. Create a new class `WindowsShellPlugin` in the `Plugins/Shell` directory.
+
+2. Add a kernel function named `shell` similar to the Unix plugin, but with a description that clarifies
+   the agent should use CMD-compatible commands.
+
+   ```csharp
+   [KernelFunction("shell")]
+   [Description(
+      """
+      You can use the shell tool to execute any command that is valid in CMD. It can be used to solve a wide range of problems.
+      **Important** Avoid using visual tools. If you find them necessary you're allowed to mention them to the user. 
+      """)]
+   public async Task<string> ExecuteCommandAsync(string command)
+   {
+      // Implementation goes here
+   }
+   ```
+
+3. Implement the kernel function to execute commands using `cmd.exe /c`. The implementation should be
+   similar to the Unix plugin but with these Windows-specific differences:
+   - Use `cmd.exe` as the filename
+   - Pass the command with the `/c` flag
+
+   ```csharp
+   var processStartInfo = new ProcessStartInfo
+   {
+      FileName = "cmd.exe",
+      Arguments = $"/c {command}",
+      RedirectStandardOutput = true,
+      RedirectStandardError = true,
+      UseShellExecute = false,
+      CreateNoWindow = true,
+   };
+
+   foreach (var (key, value) in environmentVariables)
+   {
+      processStartInfo.Environment[key] = value;
+   }
+
+   var process = new Process
+   {
+      StartInfo = processStartInfo
+   };
+
+   process.Start();
+   ```
+
+4. Use the same approach for environment variables, but adapt the syntax for Windows batch commands.
+
+   ```csharp
+   var environmentVariables = new Dictionary<string, string?>
+   {
+      ["EDITOR"] = "cmd /c \"echo Interactive editor not available in this environment. 1>&2 & exit /b 1\"",
+      ["VISUAL"] = "cmd /c \"echo Interactive editor not available in this environment. 1>&2 & exit /b 1\"",
+      ["GIT_PAGER"] = "type",
+      ["GIT_TERMINAL_PROMPT"] = "0",
+      ["GIT_SEQUENCE_EDITOR"] = "cmd /c \"echo Interactive Git commands are not supported in this environment. 1>&2 & exit /b 1\"",
+      ["GIT_EDITOR"] = "cmd /c \"echo Interactive Git commands are not supported in this environment. 1>&2 & exit /b 1\"",
+   };
+   ```
+
+</Steps>
+
+## Creating the shell plugin factory
+
+To ensure the correct plugin is used based on the operating system, you'll create a factory class that
+selects the appropriate plugin implementation.
+
+<Steps>
+
+1. Create a new class `ShellPluginFactory` in the `Plugins/Shell` directory.
+
+   ```csharp title="Plugins/Shell/ShellPluginFactory.cs"
+   using Microsoft.SemanticKernel;
+
+   namespace CodingAgent.Plugins.Shell;
+
+   public class ShellPluginFactory
+   {
+
+   }
+   ```
+
+2. Add a static method `Create()` that returns a `KernelPlugin`.
+
+
+   ```csharp title="Plugins/Shell/ShellPluginFactory.cs" ins={3-6}
+   public class ShellPluginFactory
+   {
+      public static KernelPlugin Create()
+      {
+
+      }
+   }
+   ```
+
+3. Use `OperatingSystem.IsWindows()` to check if the current platform is Windows, and create a plugin
+   from the `WindowsShellPlugin` class using `KernelPluginFactory.CreateFromObject()`. Refer to the
+   [Semantic Kernel documentation on creating plugins from objects](https://learn.microsoft.com/en-us/semantic-kernel/concepts/plugins/adding-native-plugins)
+   for details on how to use this factory method.
+
+   Repeat this for the unix-based shell plugin checking for `OperatingSystem.IsMacOS()` 
+   or `OperatingSystem.IsLinux()`.
+
+   Throw a `NotImplementedException` if the operating system is not supported.
+
+   ```csharp title="Plugins/Shell/ShellPluginFactory.cs" ins={5-15}
+   public class ShellPluginFactory
+   {
+      public static KernelPlugin Create()
+      {
+         if (OperatingSystem.IsWindows())
+         {
+               return KernelPluginFactory.CreateFromObject(new WindowsShellPlugin());
+         }
+
+         if (OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())
+         {
+               return KernelPluginFactory.CreateFromObject(new UnixShellPlugin());
+         }
+
+         throw new NotImplementedException("This operating system is not supported.");
+      }
+   }
+   ```
+
+</Steps>
+
+## Registering the shell plugin with the agent
+
+Finally, you'll integrate the shell plugin into your agent so it can use the shell functionality.
+
+<Steps>
+
+1. Open the `Agent.cs` file in your CodingAgent project.
+
+2. In the constructor of the `Agent` class, after initializing the kernel and other dependencies,
+   register the shell plugin by calling `_kernel.Plugins.Add(ShellPluginFactory.Create())`.
+
+3. Add the necessary using statement for the `CodingAgent.Plugins.Shell` namespace.
+
+</Steps>
+
+## Testing the shell plugin
+
+Now that you've implemented the shell plugin, test it to ensure the agent can execute commands.
+
+<Steps>
+
+1. Run your agent application.
+
+2. Ask the agent to execute a simple command like "List the files in the current directory".
+
+3. Verify that the agent uses the shell tool to execute the appropriate command (`ls` on Unix or `dir`
+   on Windows) and returns the output.
+
+4. Try a more complex request like "Find all C# files in the project" to confirm the agent uses ripgrep
+   as specified in the plugin description.
+
+</Steps>
+
+## Summary
+
+In this lab, you built a cross-platform shell plugin for your coding agent. You created platform-specific
+implementations for Unix and Windows systems, used a factory pattern to select the correct implementation,
+and registered the plugin with Semantic Kernel. This enables your agent to execute commands, interact with
+the file system, and perform development tasks.
+
+Key concepts you learned:
+
+- Creating kernel functions with the `KernelFunction` attribute
+- Using the `Description` attribute to guide agent behavior
+- Implementing platform-specific functionality with `OperatingSystem` checks
+- Configuring process execution with environment variables to prevent interactive prompts
+- Registering plugins with the Semantic Kernel
+
+**Solution:** `labs/tools/002-shell-plugin/solution`
