@@ -9,9 +9,12 @@ public class ConsoleCallbacks : IAgentCallbacks
     {
         AnsiConsole.Write(new Rule($"Tool Call ({functionName})"));
 
-        foreach (var argument in arguments)
+        if(arguments is not null) 
         {
-            AnsiConsole.Write(new Markup($"[green]{argument.Key}:[/] {argument.Value}\n"));
+            foreach (var argument in arguments)
+            {
+                AnsiConsole.Write(new Markup($"[green]{argument.Key}:[/] {argument.Value}\n"));
+            }
         }
 
         return Task.CompletedTask;

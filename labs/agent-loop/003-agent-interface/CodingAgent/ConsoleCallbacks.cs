@@ -8,6 +8,15 @@ public class ConsoleCallbacks : IAgentCallbacks
     public Task ReportFunctionCallAsync(string functionName, KernelArguments? arguments, object? output)
     {
         AnsiConsole.Write(new Rule($"Tool Call ({functionName})"));
+
+        if(arguments is not null) 
+        {
+            foreach (var argument in arguments)
+            {
+                AnsiConsole.Write(new Markup($"[green]{argument.Key}:[/] {argument.Value}\n"));
+            }
+        }
+
         return Task.CompletedTask;
     }
 

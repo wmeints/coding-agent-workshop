@@ -76,13 +76,26 @@ Now that we have the interface defined, let's implement it in the
        public Task ReportFunctionCallAsync(string functionName, KernelArguments? arguments, object? output)
        {
            AnsiConsole.Write(new Rule($"Tool Call ({functionName})"));
+
+           if(arguments is not null) 
+           {
+               foreach (var argument in arguments)
+               {
+                   AnsiConsole.Write(new Markup($"[green]{argument.Key}:[/] {argument.Value}\n"));
+               }
+           }
+
            return Task.CompletedTask;
        }
-   }
+    }
    ```
 
    This method displays a horizontal rule with the name of the tool being called.
    This gives the user a visual indication that the agent is invoking a tool.
+
+   We'll report the function arguments as well, so that we can see what input
+   the tool receives from the agent. This is useful when you're running shell
+   commands for example.
 
 4. Implement the `ReportAgentResponseAsync` method:
 
@@ -121,9 +134,9 @@ function calls.
 2. Modify the `HandleFunctionCalls` method signature to accept the `callbacks`
    parameter:
 
-   ```csharp title="Agent.cs" del={1} ins={2}
-   private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls)
-   private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls, IAgentCallbacks callbacks)
+   ```diff lang="csharp" title="Agent.cs"
+   - private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls)
+   + private async Task HandleFunctionCalls(IEnumerable<FunctionCallContent> functionCalls, IAgentCallbacks callbacks)
    {
        foreach (var functionCall in functionCalls)
        {
@@ -214,11 +227,9 @@ behaves with the new callbacks.
 
 </Steps>
 
-<Aside type="tip">
 The agent now provides real-time feedback about what it's doing. This makes it
 much easier to understand the agent's thought process and debug any issues that
 might arise.
-</Aside>
 
 ## Summary
 
@@ -235,7 +246,7 @@ The callback pattern we implemented is flexible and can be easily adapted for
 other interfaces, such as a web UI or logging system, without changing the core
 agent logic.
 
-If you get stuck, you can find the solution for the lab here:
+Please find the final solution for the lab here:
 [labs/agent-loop/003-agent-interface](/labs/agent-loop/003-agent-interface)
 
 In the next lab, we'll work on proper unit-tests for the agent so you don't need to
