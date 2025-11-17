@@ -87,7 +87,7 @@ export default defineConfig({
 					]
 				},
 				{
-					label: "Task Memory",
+					label: "Context Engineering",
 					items: [
 						{ label: "Overview", slug: "modules/task-memory/overview" },
 						{ label: "Implement custom instructions", slug: "modules/task-memory/custom-instructions" },
