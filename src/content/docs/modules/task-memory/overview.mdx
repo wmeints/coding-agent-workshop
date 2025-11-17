@@ -23,37 +23,52 @@ an agent *can* do, context engineering improves *how well* it does those things.
 
 There are two main types of context we can provide:
 
-1. **Custom Instructions**: Static guidance that shapes the agent's overall behavior
-2. **Task Memory**: Dynamic state that helps the agent track progress and maintain focus
+1. **Custom Instructions**: Static guidance that shapes the agent's overall
+   behavior. These instructions change, but much slower than task specific data.
+2. **Task Memory**: Dynamic state that helps the agent track progress and
+   maintain focus. The task memory varies per task and evolves as the agent
+   works. The task memory is formed from the prompt you enter when starting a 
+   new task.
 
 Together, these techniques dramatically improve an agent's ability to complete
-complex, multi-step tasks.
+complex, multi-step tasks. The more context we provide, the better the agent can
+establish a coding pattern to follow. I can tell you from personal experience
+that adding context engineering to an agent makes a huge difference, you can
+build bigger features with fewer mistakes and less back-and-forth.
 
-## Custom instructions with AGENTS.md
+### Custom instructions with AGENTS.md
 
-Custom instructions allow users to personalize their agent's behavior. By
-reading an `AGENTS.md` file from the working directory, we can provide the
-agent with:
+Custom instructions allow users to personalize their agent's behavior by
+describing the key technologies and preferences for their project. By using an
+`AGENTS.md` file from the working directory, we can provide the agent with:
 
 - Preferred coding styles and conventions
 - Project-specific guidelines
 - Domain knowledge about the codebase
 - User preferences for communication style
 
-This approach is inspired by tools like Claude Code and Cursor, which use
-similar conventions to allow users to customize agent behavior per-project.
+This approach is inspired by tools like Claude Code, Github Copilot, and Cursor
+which use similar conventions to allow users to customize agent behavior
+per-project.
 
-## Task memory and TODO tracking
+### Task memory and TODO tracking
 
 One of the biggest challenges with LLM-based agents is keeping them focused on
-multi-step plans. Task memory helps solve this by:
+multi-step plans. Often, the agent forgets what it is working on because the
+context window of the LLM is somewhat forgetful when the content gets longer.
+
+Task memory helps solve this by:
 
 - Breaking complex tasks into discrete TODO items
 - Tracking completion status of each step
 - Providing the agent with a clear view of what's done and what remains
 - Reducing the chance of the agent forgetting or skipping steps
 
+We can modify the agent's instructions to help it use task memory effectively to
+stay on track with the plan.
+
 We'll implement a `TaskMemoryPlugin` that allows the agent to:
+
 - Create TODO lists for complex tasks
 - Mark items as in-progress or completed
 - Query the current state of the TODO list
