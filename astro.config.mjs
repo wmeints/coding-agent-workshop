@@ -89,10 +89,9 @@ export default defineConfig({
 				{
 					label: "Context Engineering",
 					items: [
-						{ label: "Overview", slug: "modules/task-memory/overview" },
-						{ label: "Implement custom instructions", slug: "modules/task-memory/custom-instructions" },
-						{ label: "Build the task memory plugin", slug: "modules/task-memory/task-memory-plugin" },
-						{ label: "Testing", slug: "modules/task-memory/testing" },
+						{ label: "Overview", slug: "modules/context-engineering/overview" },
+						{ label: "Implement custom instructions", slug: "modules/context-engineering/custom-instructions" },
+						{ label: "Build the task memory plugin", slug: "modules/context-engineering/task-memory-plugin" }
 					]
 				},
 				{
