@@ -3,7 +3,7 @@ title: Building the Text Editor Plugin
 description: This tutorial teaches you how to build a Text Editor Plugin for the coding agent.
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 In this lab, we'll add a text editor plugin to our coding agent. If you've used
 the agent from the previous lab (which you should totally do, because it works!),
@@ -49,6 +49,17 @@ variables on Windows and the home directory shortcut on Unix systems.
 
 </Steps>
 
+<Aside type="note">
+I noticed that while building this plugin, the coding coding agent sometimes
+refers to `~/some-file` or `%USERPROFILE%/some-file` paths when asked to create or edit files.
+
+Both of these locations are aliases to real paths. In the shell plugin, we don't
+need to worry about this, because CMD and Bash will resolve the correct locations for us.
+
+The text editor, however, is a different tool and needs specific handling for aliased 
+file locations. That's why we created the `FileLocation` helper class to resolve these paths.
+</Aside>
+
 ## Create the TextEditorPlugin class
 
 Now we'll create the main plugin class that contains all the file editing tools.
@@ -61,6 +72,22 @@ Now we'll create the main plugin class that contains all the file editing tools.
    `System.Text.RegularExpressions`, and `Microsoft.SemanticKernel`.
 
 </Steps>
+
+You should end up with a class that looks like this:
+
+```csharp title="Plugins/TextEditor/TextEditorPlugin.cs"
+using System.ComponentModel;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.SemanticKernel;
+
+namespace CodingAgent.Plugins.TextEditor;
+
+public class TextEditorPlugin
+{
+    // Tool implementations will go here
+}
+```
 
 ## Add the view_file tool
 
@@ -92,6 +119,33 @@ making changes.
 
 </Steps>
 
+The final implementation of the `view_file` tool should look like this:
+
+```csharp title="Plugins/TextEditor/TextEditorPlugin.cs"
+[KernelFunction("view_file")]
+[Description("Use this tool to view the contents of a file.")]
+public async Task<string> ViewFile(
+    [Description("The path of the file you want to view")] string path,
+    [Description("The start line number (1-indexed)")] int from,
+    [Description("The end line number (1-indexed). Use -1 to read to the end of the file")] int to)
+{
+    var fileLocation = FileLocation.Resolve(path);
+    var lines = await File.ReadAllLinesAsync(fileLocation);
+
+    var outputBuilder = new StringBuilder();
+
+    to = to == -1 ? lines.Length : to;
+    to = Math.Clamp(to, 1, lines.Length);
+
+    for (int index = from - 1; index < to; index++)
+    {
+        outputBuilder.AppendLine(lines[index]);
+    }
+
+    return outputBuilder.ToString();
+}
+```
+
 ## Add the write_file tool
 
 The `write_file` tool creates new files or completely replaces existing file contents.
@@ -109,6 +163,21 @@ The `write_file` tool creates new files or completely replaces existing file con
    - Write the content to the file using `File.WriteAllTextAsync()`
 
 </Steps>
+
+The final implementation of the `write_file` tool should look like this:
+
+```csharp title="Plugins/TextEditor/TextEditorPlugin.cs"
+[KernelFunction("write_file")]
+[Description("Use this tool to create a new file with the content you want. The file must not already exist.")]
+public async Task WriteFile(
+    [Description("Path to the new file")] string path,
+    [Description("The content you want in the new file")] string content)
+{
+    var fileLocation = FileLocation.Resolve(path);
+    await File.WriteAllTextAsync(fileLocation, content);
+}
+```
+
 
 ## Add the insert_text tool
 
@@ -137,6 +206,48 @@ in an existing file without replacing existing content.
    - Write the updated content back to the file
 
 </Steps>
+
+The final implementation of the `insert_text` tool should look like this:
+
+```csharp title="Plugins/TextEditor/TextEditorPlugin.cs"
+[KernelFunction("insert_text")]
+[Description("Use this tool to insert text into an existing file at a specific line number.")]
+public async Task InsertText(
+    [Description("The path to the existing file")] string path,
+    [Description("Line number to insert the text at. Use 0 to insert the text at the start of the file.")] int line,
+    [Description("Content to insert into the existing file")] string content)
+{
+    var fileLocation = FileLocation.Resolve(path);
+
+    if (!File.Exists(fileLocation))
+    {
+        throw new FileNotFoundException("The specified file does not exist.", fileLocation);
+    }
+
+    var lines = await File.ReadAllLinesAsync(fileLocation);
+
+    line = Math.Clamp(line, 0, lines.Length);
+    var outputBuilder = new StringBuilder();
+
+    for (int index = 0; index < lines.Length; index++)
+    {
+        if (index == line)
+        {
+            outputBuilder.AppendLine(content);
+        }
+
+        outputBuilder.AppendLine(lines[index]);
+    }
+
+    // If the line is at the end of the file, append it now.
+    if (line == lines.Length)
+    {
+        outputBuilder.AppendLine(content);
+    }
+
+    await File.WriteAllTextAsync(fileLocation, outputBuilder.ToString());
+}
+```
 
 ## Add the replace_text tool
 
@@ -168,6 +279,39 @@ to ensure the text to replace is unique, preventing unintended changes.
 
 </Steps>
 
+The final implementation of the `replace_text` tool should look like this:
+
+```csharp title="Plugins/TextEditor/TextEditorPlugin.cs"
+[KernelFunction("replace_text")]
+[Description(
+    """
+    Use this tool to replace a piece of text in an existing file with new text. Make sure the 
+    old text is unique in the file to avoid unintended replacements.
+    """)]
+public async Task ReplaceText(
+    [Description("Path to the existing file")] string path,
+    [Description("The original text to replace in the file")] string oldText,
+    [Description("The new text to replace the old text with")] string newText)
+{
+    var fileLocation = FileLocation.Resolve(path);
+    var fileContent = await File.ReadAllTextAsync(fileLocation);
+
+    var matchPattern = new Regex(oldText, RegexOptions.Multiline);
+    var matches = matchPattern.Matches(fileContent);
+
+    if (matches.Count > 1)
+    {
+        throw new InvalidOperationException(
+            "The text to replace is not unique in the file. Aborting replacement to avoid unintended changes."
+        );
+    }
+
+    var updatedContent = matchPattern.Replace(fileContent, newText);
+
+    await File.WriteAllTextAsync(fileLocation, updatedContent);
+}
+```
+
 ## Register the text editor plugin
 
 Finally, we'll integrate the text editor plugin into our agent.
@@ -183,9 +327,44 @@ Finally, we'll integrate the text editor plugin into our agent.
 
 </Steps>
 
+The constructor for the `Agent` class should now look like this:
+
+```diff lang="csharp" title="Agent.cs"
+  using CodingAgent.Plugins.Shell;
++ using CodingAgent.Plugins.TextEditor;
+  using Microsoft.SemanticKernel;
+  using Microsoft.SemanticKernel.ChatCompletion;
+  using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+ 
+  namespace CodingAgent;
+ 
+  public class Agent
+  {
+     private ChatHistory _chatHistory;
+     private readonly Kernel _kernel;
+     private readonly IAgentInstructions _agentInstructions;
+     private readonly AgentContext _context;
+ 
+     public Agent(Kernel kernel, AgentContext context, IAgentInstructions agentInstructions)
+     {
+         _chatHistory = new ChatHistory();
+         _kernel = kernel;
+         _context = context;
+         _agentInstructions = agentInstructions;
+ 
+         _kernel.Plugins.Add(ShellPluginFactory.Create());
++        _kernel.Plugins.AddFromObject(new TextEditorPlugin());
+     }
+
+     // The rest of the class
+  }
+```
+
 ## Test the text editor plugin
 
-Let's verify that the text editor plugin works correctly with the agent.
+I recommend adding unit-tests for the text editor plugin to ensure each tool
+works as expected. On top of the unit-tests, we can also run some quick tests on
+the terminal.
 
 <Steps>
 
@@ -207,20 +386,11 @@ Let's verify that the text editor plugin works correctly with the agent.
 
 ## Summary
 
-In this lab, we built a comprehensive text editor plugin for our coding agent.
-We created tools for viewing files (`view_file`), creating new files (`write_file`),
+In this lab, we built the text editor plugin for our coding agent. We created
+tools for viewing files (`view_file`), creating new files (`write_file`),
 inserting text at specific locations (`insert_text`), and replacing text with
-validation (`replace_text`). We also built a helper class to handle platform-specific
-path resolution.
-
-Key concepts we learned:
-
-- Creating multiple kernel functions within a single plugin class
-- Using `StringBuilder` to efficiently construct multi-line text output
-- Handling 1-indexed vs 0-indexed line numbers when working with file content
-- Using regular expressions for pattern matching and replacement
-- Validating operations to prevent unintended changes (uniqueness check in `replace_text`)
-- Working with file I/O operations in an async context
+validation (`replace_text`). We also built a helper class to handle
+platform-specific aliased path resolution.
 
 With this text editor plugin, our agent can now edit files in a more controlled
 and predictable way, making it more reliable for code modification tasks.
