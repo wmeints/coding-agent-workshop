@@ -3,6 +3,8 @@ title: Building the Text Editor Plugin
 description: This tutorial teaches you how to build a Text Editor Plugin for the coding agent.
 ---
 
+import { Steps } from '@astrojs/starlight/components';
+
 In this lab, we'll add a text editor plugin to our coding agent. If you've used
 the agent from the previous lab (which you should totally do, because it works!),
 you'll notice that it edits files using a rather unlikely toolset. For example,
@@ -21,28 +23,206 @@ We'll need to create several tools:
 
 Let's get started building the plugin class first.
 
+## Lab files
+
+- **Starter:** [labs/tools/002-shell-plugin](/labs/tools/002-shell-plugin)
+- **Solution:** [labs/tools/003-text-editor-plugin](/labs/tools/003-text-editor-plugin)
+
+## Create the FileLocation helper class
+
+Before building the main plugin, we'll create a helper class to resolve file paths.
+This class handles platform-specific path resolution, such as expanding environment
+variables on Windows and the home directory shortcut on Unix systems.
+
+<Steps>
+
+1. Create a new class `FileLocation` in the `Plugins/TextEditor` directory.
+
+2. Add a static method `Resolve` that takes a relative path and returns an absolute path.
+   The method should:
+   - On Windows: Replace `%USERPROFILE%` and `%APP_DATA%` with their environment variable values
+   - On Unix (macOS/Linux): Replace `~` with the user's home directory
+   - Convert the resulting path to an absolute path using `Path.GetFullPath()`
+
+   Refer to the [.NET documentation on OperatingSystem](https://learn.microsoft.com/en-us/dotnet/api/system.operatingsystem)
+   for guidance on detecting the operating system.
+
+</Steps>
+
 ## Create the TextEditorPlugin class
 
-[Add instructions how to create the TextEditorPlugin class. Include instructions
-to add the plugin to the kernel in the Agent class.]
+Now we'll create the main plugin class that contains all the file editing tools.
 
-## Add view_file tool
+<Steps>
 
-[Add instructions on how to add the view_file tool.]
+1. Create a new class `TextEditorPlugin` in the `Plugins/TextEditor` directory.
+
+2. Add the necessary using statements for `System.ComponentModel`, `System.Text`,
+   `System.Text.RegularExpressions`, and `Microsoft.SemanticKernel`.
+
+</Steps>
+
+## Add the view_file tool
+
+The `view_file` tool allows the agent to read file contents, either in full or
+specific line ranges. This is essential for understanding existing code before
+making changes.
+
+<Steps>
+
+1. Add a kernel function named `view_file` to the `TextEditorPlugin` class with the
+   following parameters:
+   - `path` - The path of the file to view
+   - `from` - The start line number (1-indexed)
+   - `to` - The end line number (1-indexed), or -1 to read to the end of the file
+
+   Use the `KernelFunction` and `Description` attributes to mark the method.
+   The description should explain that this tool is used to view file contents.
+
+2. Implement the function to:
+   - Use the `FileLocation.Resolve()` method to get the absolute path
+   - Read all lines from the file using `File.ReadAllLinesAsync()`
+   - Handle the special case where `to` is -1 (read to end of file)
+   - Clamp the `to` value to the actual file length using `Math.Clamp()`
+   - Build the output by iterating from `from - 1` to `to` (remember: parameters are 1-indexed, but arrays are 0-indexed)
+   - Return the lines as a string
+
+   Refer to the [Semantic Kernel documentation on creating plugins from classes](https://learn.microsoft.com/en-us/semantic-kernel/concepts/plugins/using-the-kernelfunction-decorator)
+   for guidance on creating kernel functions.
+
+</Steps>
 
 ## Add the write_file tool
 
-[Add instructions on how to add the write_file tool.]
+The `write_file` tool creates new files or completely replaces existing file contents.
+
+<Steps>
+
+1. Add a kernel function named `write_file` with parameters:
+   - `path` - Path to the file to create or replace
+   - `content` - The content to write to the file
+
+   Describe this tool as creating a new file with the specified content.
+
+2. Implement the function to:
+   - Resolve the file path using `FileLocation.Resolve()`
+   - Write the content to the file using `File.WriteAllTextAsync()`
+
+</Steps>
 
 ## Add the insert_text tool
 
-[Add instructions on how to add the insert_text tool.]
+The `insert_text` tool allows the agent to insert new text at a specific line
+in an existing file without replacing existing content.
+
+<Steps>
+
+1. Add a kernel function named `insert_text` with parameters:
+   - `path` - The path to the existing file
+   - `line` - Line number to insert at (0 inserts at the start of the file)
+   - `content` - Content to insert
+
+   Describe this tool as inserting text into an existing file at a specific line number.
+
+2. Implement the function to:
+   - Resolve the file path
+   - Check if the file exists; if not, throw a `FileNotFoundException`
+   - Read all lines from the file
+   - Clamp the `line` parameter to valid values (0 to file length) using `Math.Clamp()`
+   - Build the output by:
+     - Iterating through existing lines
+     - When reaching the insertion point, add the new content
+     - Include the original line after the inserted content
+   - Handle the edge case where `line` equals the file length (append at end)
+   - Write the updated content back to the file
+
+</Steps>
 
 ## Add the replace_text tool
 
-[Add instructions on how to add the replace_text tool.]
+The `replace_text` tool replaces specific text in a file. It includes validation
+to ensure the text to replace is unique, preventing unintended changes.
+
+<Steps>
+
+1. Add a kernel function named `replace_text` with parameters:
+   - `path` - Path to the existing file
+   - `oldText` - The original text to replace
+   - `newText` - The new text to use as replacement
+
+   Describe this tool as replacing text in a file, emphasizing that the old text
+   must be unique to avoid unintended replacements.
+
+2. Implement the function to:
+   - Resolve the file path
+   - Read the entire file content using `File.ReadAllTextAsync()`
+   - Create a `Regex` pattern from `oldText` with `RegexOptions.Multiline`
+   - Find all matches of the pattern in the file content
+   - If there's more than one match, throw an `InvalidOperationException` to prevent
+     unintended replacements
+   - Replace the matched text with the new text using the regex
+   - Write the updated content back to the file
+
+   Refer to the [.NET documentation on Regex](https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions)
+   for guidance on using regular expressions for text replacement.
+
+</Steps>
+
+## Register the text editor plugin
+
+Finally, we'll integrate the text editor plugin into our agent.
+
+<Steps>
+
+1. Open the `Agent.cs` file in the CodingAgent project.
+
+2. In the constructor of the `Agent` class, after registering the shell plugin,
+   add the text editor plugin by calling `_kernel.Plugins.AddFromObject(new TextEditorPlugin())`.
+
+3. Add the necessary using statement for the `CodingAgent.Plugins.TextEditor` namespace.
+
+</Steps>
+
+## Test the text editor plugin
+
+Let's verify that the text editor plugin works correctly with the agent.
+
+<Steps>
+
+1. Run the agent application.
+
+2. Ask the agent to create a new file with some content, for example:
+   "Create a file called hello.txt with the content 'Hello, World!'"
+
+3. Ask the agent to view the file: "Show me the contents of hello.txt"
+
+4. Ask the agent to insert text: "Add 'This is a new line' at line 1 in hello.txt"
+
+5. Ask the agent to replace text: "Replace 'World' with 'Universe' in hello.txt"
+
+6. Verify that each operation works as expected and that the agent is using the
+   text editor tools instead of shell commands like sed or echo.
+
+</Steps>
 
 ## Summary
 
-[Add a summary of the lab with the operations with performed. Refer to the
-solution files as needed.]
+In this lab, we built a comprehensive text editor plugin for our coding agent.
+We created tools for viewing files (`view_file`), creating new files (`write_file`),
+inserting text at specific locations (`insert_text`), and replacing text with
+validation (`replace_text`). We also built a helper class to handle platform-specific
+path resolution.
+
+Key concepts we learned:
+
+- Creating multiple kernel functions within a single plugin class
+- Using `StringBuilder` to efficiently construct multi-line text output
+- Handling 1-indexed vs 0-indexed line numbers when working with file content
+- Using regular expressions for pattern matching and replacement
+- Validating operations to prevent unintended changes (uniqueness check in `replace_text`)
+- Working with file I/O operations in an async context
+
+With this text editor plugin, our agent can now edit files in a more controlled
+and predictable way, making it more reliable for code modification tasks.
+
+**Solution:** [labs/tools/003-text-editor-plugin](/labs/tools/003-text-editor-plugin)
