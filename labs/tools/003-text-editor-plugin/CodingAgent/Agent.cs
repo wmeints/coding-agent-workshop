@@ -1,4 +1,5 @@
 using CodingAgent.Plugins.Shell;
+using CodingAgent.Plugins.TextEditor;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
@@ -20,6 +21,7 @@ public class Agent
         _agentInstructions = agentInstructions;
 
         _kernel.Plugins.Add(ShellPluginFactory.Create());
+        _kernel.Plugins.AddFromObject(new TextEditorPlugin());
     }
 
     public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
