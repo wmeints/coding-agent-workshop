@@ -2,3 +2,47 @@
 title: Building the Text Editor Plugin
 description: This tutorial teaches you how to build a Text Editor Plugin for the coding agent.
 ---
+
+In this lab, we'll add a text editor plugin to our coding agent. If you've used
+the agent from the previous lab (which you should totally do, because it works!),
+you'll notice that it edits files using a rather unlikely toolset. For example,
+on Linux it will use sed/cat/echo and other tools to manipulate files. While it
+works, it's not very pretty to see.
+
+A better approach is to add a text editor plugin that provides tools to view
+and edit files directly. This is what we'll do in this lab.
+
+We'll need to create several tools:
+
+- The `view_file` tool to view the contents of a file. This tool can show fragments, as well as full file contents.
+- The `write_file` tool to write contents to a file, replacing any existing content or creating new files.
+- The `insert_text` tool to insert text at a specific line in a file.
+- The `replace_text` tool to replace text in a file between specific line numbers.
+
+Let's get started building the plugin class first.
+
+## Create the TextEditorPlugin class
+
+[Add instructions how to create the TextEditorPlugin class. Include instructions
+to add the plugin to the kernel in the Agent class.]
+
+## Add view_file tool
+
+[Add instructions on how to add the view_file tool.]
+
+## Add the write_file tool
+
+[Add instructions on how to add the write_file tool.]
+
+## Add the insert_text tool
+
+[Add instructions on how to add the insert_text tool.]
+
+## Add the replace_text tool
+
+[Add instructions on how to add the replace_text tool.]
+
+## Summary
+
+[Add a summary of the lab with the operations with performed. Refer to the
+solution files as needed.]
