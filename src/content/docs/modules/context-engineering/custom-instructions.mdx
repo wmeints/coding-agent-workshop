@@ -3,82 +3,348 @@ title: Implement Custom Instructions with AGENTS.md
 description: Learn how to read and apply custom instructions from AGENTS.md files.
 ---
 
-import { Steps, Card } from '@astrojs/starlight/components';
+import { Steps, Card, Aside } from '@astrojs/starlight/components';
 
-In this lab, you'll implement the `AgentInstructions` class that reads custom instructions from an `AGENTS.md` file in the user's working directory. These instructions will be included in the agent's system prompt to customize its behavior.
+In this lab, you'll implement reading custom instructions in the
+`AgentInstructions` class that reads custom instructions from an `AGENTS.md`
+file in the user's working directory. These instructions will be included in the
+agent's system prompt to customize its behavior.
 
-## Lab setup
+By the end of this lab, your agent will be able to discover and load
+project-specific instructions from an `AGENTS.md` file, allowing developers to
+customize the agent's behavior for different projects without modifying the
+agent's code.
 
-- **Starter code**: `labs/task-memory/custom-instructions/start`
-- **Solution**: `labs/task-memory/custom-instructions/solution`
+## Lab files
 
-## Understanding the requirements
+- **Starter code**: `labs/tools/003-text-editor-plugin/`
+- **Solution code**: `labs/context-engineering/001-custom-instructions/`
 
-The `AgentInstructions` class should:
+## Read custom instructions
 
-1. Check if an `AGENTS.md` file exists in the working directory
-2. Read the contents of the file if it exists
-3. Return the instructions as a string to be included in the system prompt
-4. Handle cases where the file doesn't exist gracefully
-
-This simple but powerful pattern allows users to customize agent behavior per-project without modifying code.
-
-## Creating the AgentInstructions class
-
-<Steps>
-
-1. **Create the AgentInstructions class**
-
-   Create a new class `AgentInstructions` in the appropriate location. The class should have a method `GetInstructions()` that returns the custom instructions as a string.
-
-2. **Check for AGENTS.md file existence**
-
-   Use `File.Exists()` to check if an `AGENTS.md` file exists in the current working directory. You'll need to construct the full path using `Path.Combine()` with `Environment.CurrentDirectory`.
-
-3. **Read the file contents**
-
-   If the file exists, use `File.ReadAllTextAsync()` to read its contents. Make your method async to support this.
-
-4. **Handle missing files gracefully**
-
-   If the file doesn't exist, return an empty string or null. The agent should work fine without custom instructions.
-
-5. **Add error handling**
-
-   Wrap file I/O operations in try-catch blocks to handle potential exceptions like permission issues or file locks.
-
-</Steps>
-
-## Integrating with the CodingAgent
+The first step is to create a private method that searches for and reads the `AGENTS.md` file.
 
 <Steps>
 
-1. **Update the system prompt**
+1. Open the `AgentInstructions.cs` file in the `CodingAgent` project.
 
-   Modify the `CodingAgent` class to use `AgentInstructions` when building the system prompt. If custom instructions exist, append them to the base system prompt.
+2. Create a new private method called `ReadCustomInstructions` that takes an `AgentContext` parameter and returns `Task<string?>`. This method should:
+   - Start searching from the working directory specified in the context
+   - Check if an `AGENTS.md` file exists in the current directory
+   - If found, read and return the contents asynchronously
+   - If not found, move to the parent directory and repeat
+   - Continue until either the file is found or there are no more parent directories
+   - Return `null` if no `AGENTS.md` file is found
 
-2. **Consider prompt structure**
+   ```diff lang="csharp" title="AgentInstructions.cs"
+   public class AgentInstructions : IAgentInstructions
+   {
+      public async Task InjectAsync(Kernel kernel, AgentContext context, ChatHistory chatHistory)
+      {
+        // Existing code to read system instructions
 
-   Think about how to structure the prompt. You might want to use a section header like "## Custom Instructions" to clearly delineate user-provided guidance.
-
-3. **Test with a sample AGENTS.md**
-
-   Create a sample `AGENTS.md` file in your project root with some simple instructions (e.g., "Always use C# coding conventions") and verify they appear in the agent's behavior.
+   +    private async Task<string?> ReadCustomInstructions(AgentContext context)
+   +    {
+   +        var currentDirectory = context.WorkingDirectory;
+   +        
+   +        while (!string.IsNullOrEmpty(currentDirectory))
+   +        {
+   +            var customInstructionsPath = Path.Combine(currentDirectory, "AGENTS.md");
+   +
+   +            if (File.Exists(customInstructionsPath))
+   +            {
+   +                return await File.ReadAllTextAsync(customInstructionsPath);
+   +            }
+   +            
+   +            currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
+   +        }
+   +
+   +        return null;
+   +    }
+   }
+   ```
 
 </Steps>
 
-<Card title="Best practices for AGENTS.md">
-Consider documenting the AGENTS.md format for users. Include examples of effective custom instructions, such as:
-- Coding style preferences
-- Framework-specific conventions
-- Domain terminology
-- Communication preferences
-</Card>
+## Update the InjectAsync Method
+
+Now that you can read custom instructions, you need to integrate them into the chat history.
+
+<Steps>
+
+1. In the `InjectAsync` method, after reading the system instructions, call your new `ReadCustomInstructions` method to get the custom instructions.
+
+2. After inserting the system prompt into the chat history at position 0, check if custom instructions were found (the returned string is not null or empty).
+
+3. If custom instructions exist, insert them into the chat history at position 1 with the `AuthorRole.Developer` role. This ensures custom instructions come after the system prompt but before any user messages.
+
+   ```diff lang="csharp" title="AgentInstructions.cs"
+   public class AgentInstructions : IAgentInstructions
+   {
+      public async Task InjectAsync(Kernel kernel, AgentContext context, ChatHistory chatHistory)
+      {
+            var systemPrompt = await ReadSystemInstructionsAsync(kernel, context);
+   +        var customInstructions = await ReadCustomInstructions(context);
+   +        
+            chatHistory.Insert(0, new ChatMessageContent(AuthorRole.System, systemPrompt));
+   +
+   +        if (!string.IsNullOrEmpty(customInstructions))
+   +        {
+   +            chatHistory.Insert(1, new ChatMessageContent(AuthorRole.Developer, customInstructions));
+   +        }
+      }
+
+      // The rest of the code remains unchanged
+   }
+   ```
+
+</Steps>
+
+<Aside type="tip" title="Why Use the Developer Role?">
+The `Developer` role is used for custom instructions because it sits between 
+the system prompt and user messages in terms of priority. This allows 
+project-specific guidance to override general system instructions while still 
+being distinct from the system prompt itself.
+
+You can learn more about the chain of command in the OpenAI LLMs in 
+[their documentation](https://model-spec.openai.com/2025-02-12.html#chain_of_command).
+</Aside>
+
+## Update the Remove Method
+
+The `Remove` method needs to be updated to handle the removal of both the system prompt and any custom instructions.
+
+<Steps>
+
+1. The existing code already removes the system prompt if it exists at position 0. Keep this logic.
+
+2. After removing the system prompt, add logic to check if there's now a `Developer` role message at position 0 (which would have been at position 1 before the system prompt was removed).
+
+3. If a `Developer` role message exists at position 0, remove it as well. This ensures that both the system prompt and custom instructions are removed from the chat history.
+
+   ```diff lang="csharp" title="AgentInstructions.cs"
+   public class AgentInstructions : IAgentInstructions
+   {
+      // The rest of the code remains unchanged
+
+      public void Remove(ChatHistory chatHistory)
+      {
+            if (chatHistory.Count > 0 && chatHistory[0].Role == AuthorRole.System)
+            {
+               chatHistory.RemoveAt(0);
+            }
+   +        
+   +        // Check if there's a developer prompt with the custom instructions and remove it.
+   +        if (chatHistory.Count > 0 && chatHistory[0].Role == AuthorRole.Developer)
+   +        {
+   +            chatHistory.RemoveAt(0);
+   +        }
+      }
+   }
+   ```
+
+</Steps>
+
+## Add Unit Tests for Custom Instructions
+
+To verify that your implementation works correctly, you'll need to add
+comprehensive unit tests. The starter code already has a basic test file, but
+you need to add tests for the new functionality.
+
+<Steps>
+
+1. Open the `AgentInstructionsTests.cs` file in the `CodingAgent.Tests` project.
+
+2. Make the test class implement `IDisposable` to allow for proper cleanup of temporary test files.
+
+3. Add a private field `_tempDirectory` to store the path to a temporary directory for testing.
+
+4. Add a constructor that creates a unique temporary directory using
+   `Path.GetTempPath()` and `Guid.NewGuid()`.
+
+   ```diff lang="csharp" title="AgentInstructionsTests.cs"
+   -public class AgentInstructionsTests
+   +public class AgentInstructionsTests : IDisposable
+   {
+   +    private readonly string _tempDirectory;
+   +
+   +    public AgentInstructionsTests()
+   +    {
+   +        _tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+   +        Directory.CreateDirectory(_tempDirectory);
+   +    }
+   +
+   +    public void Dispose()
+   +    {
+   +    }
+   +
+         // Existing tests...
+   }
+   ```
+
+5. Implement the `Dispose` method to clean up the temporary directory after
+   tests complete. Use `Directory.Delete` with the `recursive` parameter set to
+   `true`.
+
+   ```diff lang="csharp" title="AgentInstructionsTests.cs"
+   public class AgentInstructionsTests : IDisposable
+   {
+        private readonly string _tempDirectory;
+   
+        public AgentInstructionsTests()
+        {
+            _tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(_tempDirectory);
+        }
+   
+        public void Dispose()
+        {
+   +        if (Directory.Exists(_tempDirectory))
+   +        {
+   +            Directory.Delete(_tempDirectory, recursive: true);
+   +        }
+        }
+
+         // Existing tests...
+   }
+   ```
+
+
+6. Add a test named `InjectAsync_WithCustomInstructions_ShouldIncludeDeveloperMessage` that:
+   - Creates a temporary `AGENTS.md` file with sample custom instructions
+   - Creates an `AgentContext` with the working directory set to the temporary directory
+   - Calls `InjectAsync` on the `AgentInstructions` instance
+   - Verifies that the chat history contains exactly 2 messages
+   - Verifies the first message has the `System` role
+   - Verifies the second message has the `Developer` role and contains the custom instructions
+
+   ```csharp title="AgentInstructionsTests.cs"
+   [Fact]
+   public async Task InjectAsync_WithCustomInstructions_ShouldIncludeDeveloperMessage()
+   {
+      // Arrange
+      var customInstructions = "# Custom Instructions\nAlways use async/await patterns.";
+      var agentsFilePath = Path.Combine(_tempDirectory, "AGENTS.md");
+      await File.WriteAllTextAsync(agentsFilePath, customInstructions);
+
+      var agentInstructions = new AgentInstructions();
+      var context = new AgentContext
+      {
+         WorkingDirectory = _tempDirectory,
+         OperatingSystem = "Linux"
+      };
+
+      var kernel = Kernel.CreateBuilder().Build();
+      var chatHistory = new ChatHistory();
+
+      // Act
+      await agentInstructions.InjectAsync(kernel, context, chatHistory);
+
+      // Assert
+      Assert.Equal(2, chatHistory.Count);
+      Assert.Equal(AuthorRole.System, chatHistory[0].Role);
+      Assert.Equal(AuthorRole.Developer, chatHistory[1].Role);
+      Assert.Equal(customInstructions, chatHistory[1].Content);
+   }
+   ```
+
+7. Add a test named `Remove_WithCustomInstructions_ShouldRemoveSystemAndDeveloperMessages` that:
+   - Creates a chat history with a system message, developer message, and user message
+   - Calls the `Remove` method
+   - Verifies that only the user message remains in the chat history
+
+   ```csharp title="AgentInstructionsTests.cs"
+   [Fact]
+   public void Remove_WithCustomInstructions_ShouldRemoveSystemAndDeveloperMessages()
+   {
+      // Arrange
+      var agentInstructions = new AgentInstructions();
+      var chatHistory = new ChatHistory();
+      chatHistory.Add(new ChatMessageContent(AuthorRole.System, "System prompt"));
+      chatHistory.Add(new ChatMessageContent(AuthorRole.Developer, "Custom instructions"));
+      chatHistory.Add(new ChatMessageContent(AuthorRole.User, "User message"));
+
+      // Act
+      agentInstructions.Remove(chatHistory);
+
+      // Assert
+      Assert.Single(chatHistory);
+      Assert.Equal(AuthorRole.User, chatHistory[0].Role);
+      Assert.Equal("User message", chatHistory[0].Content);
+   }
+   ```
+
+8. Add a test named `Remove_WithoutCustomInstructions_ShouldRemoveOnlySystemMessage` that:
+   - Creates a chat history with a system message and user message (no developer message)
+   - Calls the `Remove` method
+   - Verifies that only the user message remains in the chat history
+
+   ```csharp title="AgentInstructionsTests.cs"
+   [Fact]
+   public void Remove_WithCustomInstructions_ShouldRemoveSystemAndDeveloperMessages()
+   {
+      // Arrange
+      var agentInstructions = new AgentInstructions();
+      var chatHistory = new ChatHistory();
+      chatHistory.Add(new ChatMessageContent(AuthorRole.System, "System prompt"));
+      chatHistory.Add(new ChatMessageContent(AuthorRole.Developer, "Custom instructions"));
+      chatHistory.Add(new ChatMessageContent(AuthorRole.User, "User message"));
+
+      // Act
+      agentInstructions.Remove(chatHistory);
+
+      // Assert
+      Assert.Single(chatHistory);
+      Assert.Equal(AuthorRole.User, chatHistory[0].Role);
+      Assert.Equal("User message", chatHistory[0].Content);
+   }
+   ```
+
+</Steps>
+
+## Test Your Implementation
+
+Now it's time to verify that everything works as expected.
+
+<Steps>
+
+1. Run the unit tests using `dotnet test` from the solution directory to ensure
+   all tests pass.
+
+2. Create an `AGENTS.md` file in a test directory with some custom instructions,
+   for example:
+
+   ```markdown
+   # Custom Agent Instructions
+
+   When writing code, always prefer async/await patterns over blocking calls.
+   Use meaningful variable names and add comments for complex logic.
+   ```
+
+3. Run the coding agent from that directory and verify that the custom
+   instructions are being loaded and used by the agent.
+
+4. Try running the agent from a subdirectory to verify that it searches parent
+   directories for the `AGENTS.md` file.
+
+</Steps>
 
 ## Summary
 
-You've now implemented custom instructions! The agent can read user-specific guidance from `AGENTS.md` and incorporate it into its system prompt. This allows each project to have tailored agent behavior.
+You've now implemented custom instructions for your coding agent! The agent can
+now:
 
-In the next lab, we'll implement task memory to help the agent track multi-step plans.
+- Search for `AGENTS.md` files in the current directory and parent directories
+- Load custom instructions and include them in the chat history
+- Properly remove both system prompts and custom instructions when needed
+- Handle projects with and without custom instructions gracefully
 
-**Solution**: `labs/task-memory/custom-instructions/solution`
+This feature enables developers to customize the agent's behavior for different
+projects without modifying the agent's core code. Each project can have its own
+`AGENTS.md` file with project-specific guidelines, coding standards, or
+preferences.
+
+In the next lab, you'll implement task memory to help the agent track multi-step
+plans and maintain context across multiple interactions.
+
+**Solution**: `labs/context-engineering/001-custom-instructions/`
