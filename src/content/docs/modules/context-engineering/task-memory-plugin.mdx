@@ -3,122 +3,247 @@ title: Build the Task Memory Plugin
 description: Implement a task memory system using TODO items to improve plan adherence.
 ---
 
-import { Steps, Card } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
-In this lab, you'll build the `TaskMemoryPlugin` that enables the agent to create, update, and track TODO items. This dramatically improves the agent's ability to complete complex multi-step tasks.
+In this lab, you'll build the `TaskMemoryPlugin` that enables the agent to
+create, update, and track TODO items. This dramatically improves the agent's
+ability to complete complex multi-step tasks by giving it a structured way to
+break down work, track progress, and maintain focus.
 
-## Lab setup
+Without task memory, agents often lose track of their plan partway through
+execution, skip steps, or mark tasks as complete prematurely. By implementing
+this plugin, you'll provide the agent with a reliable mechanism to manage its
+work systematically.
 
-- **Starter code**: `labs/task-memory/task-memory-plugin/start`
-- **Solution**: `labs/task-memory/task-memory-plugin/solution`
+## Lab files
 
-## Understanding task memory
+- **Starter code**: `labs/context-engineering/001-custom-instructions/`
+- **Solution code**: `labs/context-engineering/002-task-memory/`
 
-Task memory works by giving the agent tools to:
+## Create the TodoItem class
 
-1. **Create TODO lists**: Break complex tasks into steps
-2. **Update TODO status**: Mark items as in-progress or completed
-3. **Query current state**: Review what's done and what remains
-
-This external memory helps compensate for the LLM's tendency to lose track of multi-step plans.
-
-## Designing the data model
+The foundation of task memory is a data structure to represent individual TODO
+items. Each item needs to track what needs to be done and its current status.
 
 <Steps>
 
-1. **Create a TodoItem class**
+1. Create a new folder `Plugins/TaskMemory` in your project.
 
-   Define a class to represent individual TODO items. Consider what properties you need:
-   - `Id`: Unique identifier
-   - `Description`: What needs to be done
-   - `Status`: Pending, InProgress, or Completed
-   - `CreatedAt`: When the item was created
+2. Create a `TodoItem.cs` class in the `Plugins/TaskMemory` folder.
 
-2. **Create a TodoStatus enum**
+3. Add two properties to the `TodoItem` class:
+   - `Content` - a string that describes what needs to be done
+   - `Status` - a string that tracks whether the item is "pending", "in_progress", or "completed"
 
-   Define an enum for the possible states: `Pending`, `InProgress`, `Completed`
+4. Annotate both properties with `[JsonPropertyName]` attributes to ensure proper
+   serialization when the agent interacts with the plugin. Refer to the
+   [System.Text.Json documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/customize-properties)
+   for guidance on property name customization.
 
-3. **Create a TaskMemory class**
-
-   This class will manage the collection of TODO items in memory. It should store a list of `TodoItem` objects and provide methods to manipulate them.
+5. Add a `[Description]` attribute to the `Status` property that explains the
+   valid status values. This helps the language model understand how to use the
+   property correctly. They should be `pending`, `in_progress`, and `completed`.
 
 </Steps>
 
-## Implementing the TaskMemoryPlugin
+
+After performing these steps you should end up with a TodoItem class similar
+to the following:
+
+```csharp
+public class TodoItem
+{
+    [JsonPropertyName("content")]
+    public string Content { get; set; }
+    
+    [JsonPropertyName("status")]
+    [Description("The status of the TODO item (pending, in_progress, or completed)")]
+    public string Status { get; set; }
+}
+```
+
+## Create the TaskMemoryPlugin class
+
+Now you'll implement the plugin that manages the TODO list. This plugin needs
+two core functions: one to write TODO items and one to read them back.
 
 <Steps>
 
-1. **Create the plugin class**
+1. Create a `TaskMemoryPlugin.cs` class in the `Plugins/TaskMemory` folder.
 
-   Create a `TaskMemoryPlugin` class that will contain the kernel functions. Inject or create a `TaskMemory` instance to store the TODO items.
+2. Add a private field `_todoItems` of type `List<TodoItem>` to store the TODO list.
 
-2. **Implement create_todo_list function**
+3. Implement a `WriteTodos` method that:
+   - Accepts a `List<TodoItem>` parameter named `todos`
+   - Stores the provided list in the `_todoItems` field
+   - Returns `void`
 
-   Create a `[KernelFunction]` that accepts a list of TODO items (as strings) and creates a new TODO list. This should:
-   - Clear any existing TODOs (or append, depending on your design)
-   - Create new `TodoItem` objects with status `Pending`
-   - Return a confirmation message
+4. Annotate the `WriteTodos` method with:
+   - `[KernelFunction("write_todos")]` - This gives the function an explicit name
+   - `[Description]` - Add comprehensive instructions that tell the agent when and how to use this tool
 
+5. In the description for `WriteTodos`, include guidance on:
+   - When to use the tool (multi-step tasks, complex tasks, multiple user requests)
+   - How to manage task states (mark as in_progress when starting, completed when done)
+   - Task completion requirements (fully complete tasks before moving on)
+   - Task breakdown guidelines (create specific, actionable items)
+
+6. Add a `[Description]` attribute to the `todos` parameter to explain what it represents.
+
+7. Implement a `ReadTodos` method that:
+   - Returns the current `_todoItems` list
+   - Has no parameters
+   - Is annotated with `[KernelFunction]` and a `[Description]` explaining its purpose
+
+</Steps>
+
+After implementing these steps, you should have a `TaskMemoryPlugin` class similar to the following:
+
+```csharp
+public class TaskMemoryPlugin
+{
+    private List<TodoItem> _todoItems;
+    
+    [KernelFunction("write_todos")]
+    [Description(
+        """
+        Use this tool for the following scenarios:
+        
+        1. Multi-step tasks
+        2. Complex and non-trivial tasks
+        3. When the user asks you to make a TODO list
+        4. When the user provides you with multiple tasks to perform
+        5. The plan needs multiple revisions from the first few steps
+        
+        How to use this tool:
+        
+        - Mark tasks as 'in_progress' when you start working on them.
+        - Mark tasks as 'completed' immediately after you finish them.
+        - Remove completed tasks from the list to keep it clean.
+        - Only work on one task at a time to maintain focus.
+        - IMPORTANT: When you create a TODO list, the first task is set to `in_progress` immediately.
+        - IMPORTANT: Mark TODO items IMMEDIATELY as completed after finishing a task.
+        
+        Task completion requirements:
+        
+        - Each task must be fully completed before moving on to the next.
+        - Do not mark a task as `completed` if there are any remaining issues.
+        
+        Task break down guidelines:
+        
+        - Create specific actionable items.
+        - Break complex tasks into smaller tasks that can be completed in one step.
+        - Use clear, descriptive task names.
+        """
+    )]
+    public void WriteTodos([Description("The TODO items")] List<TodoItem> todos)
+    {
+        _todoItems = todos;
+    }
+
+    [KernelFunction]
+    [Description("Use this tool to read the current TODO list.")]
+    public List<TodoItem> ReadTodos()
+    {
+        return _todoItems;
+    }
+}
+```
+
+It's okay if your subscription is shorter than the one shown above. The key is to
+provide clear instructions. You may need to tweak the wording based on how well
+the agent follows the instructions during testing.
+
+Refer to the [Semantic Kernel plugins
+documentation](https://learn.microsoft.com/en-us/semantic-kernel/concepts/plugins/)
+for more details on creating plugin methods and using attributes.
+
+## Integrate the plugin with the agent
+
+With the plugin implemented, you need to register it with the Semantic Kernel
+so the agent can use it.
+
+<Steps>
+
+1. Open the `Agent.cs` file.
+
+2. Add a using statement for `CodingAgent.Plugins.TaskMemory` at the top of the file.
+
+3. In the `Agent` constructor, after the existing plugin registrations, add a new
+   line to register the `TaskMemoryPlugin`:
    ```csharp
-   [KernelFunction("create_todo_list")]
-   [Description("Creates a TODO list to track multi-step tasks")]
-   public string CreateTodoList([Description("List of tasks to complete")] string[] tasks)
+   _kernel.Plugins.AddFromObject(new TaskMemoryPlugin());
+   ```
+
+</Steps>
+
+## Enhance the console callbacks
+
+To provide better visibility into the agent's planning process, you can update the
+`ConsoleCallbacks` class to handle the calls to the `write_todo` separately
+introducing custom formatting.
+
+<Steps>
+1. Open the `ConsoleCallbacks.cs` file
+2. In the `OnFunctionInvokedAsync` method, add a new case to handle the
+   `write_todos` function:
+   ```csharp
+   if(functionName == "write_todos")
    {
-       // Implementation here
+      ReportWriteTodosInvocation(JsonSerializer.Deserialize<List<TodoItem>>(arguments["todos"]));
+      return;
    }
    ```
 
-3. **Implement update_todo_status function**
-
-   Create a function to update the status of a specific TODO item. It should accept:
-   - `todoId`: The identifier of the TODO item
-   - `status`: The new status (pending, in_progress, completed)
-
-   Use snake_case for parameter names to match LLM training data.
-
-4. **Implement get_todo_list function**
-
-   Create a function that returns the current state of all TODO items. This helps the agent understand what's been done and what remains.
-
-   Consider formatting the output clearly, perhaps as a numbered list with status indicators.
-
-5. **Add the plugin to the kernel**
-
-   Update your `CodingAgent` class to register the `TaskMemoryPlugin` with the kernel.
+3. Implement the `ReportWriteTodosInvocation` method to format and display the
+   TODO items using `Spectre.Console` markup.
 
 </Steps>
 
-## Enhancing the system prompt
+Refer to the [Spectre.Console documentation](https://spectreconsole.net/markup)
+for details on text formatting and markup syntax.
+
+## Test the implementation
+
+Run your agent and test the task memory plugin with a multi-step request.
 
 <Steps>
 
-1. **Instruct the agent to use TODO lists**
-
-   Update the system prompt to encourage the agent to create TODO lists for multi-step tasks. For example:
-
-   ```
-   For complex tasks with multiple steps, create a TODO list using the
-   create_todo_list tool. Update the status as you complete each item.
+1. Build and run the application:
+   ```bash
+   dotnet run
    ```
 
-2. **Include current TODO state**
+2. Try a complex request that requires multiple steps, such as:
+   ```
+   Create a new C# class called Calculator with add and subtract methods, then write unit tests for it
+   ```
 
-   Consider including the current TODO list in each iteration of the agent loop. This keeps the agent aware of progress.
+3. Observe how the agent:
+   - Creates a TODO list at the start
+   - Marks tasks as in-progress when working on them
+   - Marks tasks as completed when finished
+   - Follows the plan systematically
 
-3. **Test the behavior**
-
-   Give the agent a complex multi-step task and observe whether it creates and maintains a TODO list.
+4. Experiment with different types of requests to see how the agent uses task
+   memory to organize its work.
 
 </Steps>
 
-<Card title="Advanced: Persistence">
-For this workshop, we're using in-memory storage for TODO items. In a production system, you might persist TODO items to a database or file so they survive agent restarts.
-</Card>
-
 ## Summary
 
-You've implemented a task memory system! The agent can now create TODO lists, track progress, and maintain focus on multi-step plans. This is a powerful technique for improving agent reliability.
+You've successfully implemented a task memory system that transforms how your
+agent handles complex tasks. By providing structured TODO management, you've
+enabled the agent to:
 
-Next, we'll write tests to ensure our custom instructions and task memory work correctly.
+- Break down complex requests into actionable steps
+- Track progress systematically
+- Maintain focus on the current task
+- Complete work more reliably
 
-**Solution**: `labs/task-memory/task-memory-plugin/solution`
+The combination of custom instructions and task memory creates a powerful
+foundation for building capable coding agents. In the next module, you'll learn
+how to add retrieval-augmented generation to give your agent access to external
+knowledge sources.
+
+**Solution**: `labs/context-engineering/002-task-memory/`
