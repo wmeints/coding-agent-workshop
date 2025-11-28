@@ -39,7 +39,7 @@ public class TaskMemoryPlugin
         - Use clear, descriptive task names.
         """
     )]
-    public void WriteTodos(List<TodoItem> todos)
+    public void WriteTodos([Description("The TODO items")] List<TodoItem> todos)
     {
         _todoItems = todos;
     }

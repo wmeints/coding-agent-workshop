@@ -13,7 +13,8 @@ public class ConsoleCallbacks : IAgentCallbacks
         {
             foreach (var argument in arguments)
             {
-                AnsiConsole.Write(new Markup($"[green]{argument.Key}:[/] {argument.Value}\n"));
+                var argumentValue = argument.Value?.ToString() ?? "";
+                AnsiConsole.Write(new Markup($"[green]{argument.Key}:[/] {Markup.Escape(argumentValue)}\n"));
             }
         }
 
