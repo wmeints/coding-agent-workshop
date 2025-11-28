@@ -32,17 +32,27 @@ public class TextEditorPlugin
 
     [KernelFunction("write_file")]
     [Description("Use this tool to create a new file with the content you want. The file must not already exist.")]
-    public async Task WriteFile(
+    public async Task<string> WriteFile(
         [Description("Path to the new file")] string path,
-        [Description("The content you want in the new file")] string content)
+        [Description("The content you want in the new file")]
+        string content)
     {
-        var fileLocation = FileLocation.Resolve(path);
-        await File.WriteAllTextAsync(fileLocation, content);
+        try
+        {
+            var fileLocation = FileLocation.Resolve(path);
+            await File.WriteAllTextAsync(fileLocation, content);
+            
+            return "File written successfully.";
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return "Error: The specified directory does not exist.";
+        }
     }
 
     [KernelFunction("insert_text")]
     [Description("Use this tool to insert text into an existing file at a specific line number.")]
-    public async Task InsertText(
+    public async Task<string> InsertText(
         [Description("The path to the existing file")] string path,
         [Description("Line number to insert the text at. Use 0 to insert the text at the start of the file.")] int line,
         [Description("Content to insert into the existing file")] string content)
@@ -51,7 +61,7 @@ public class TextEditorPlugin
 
         if (!File.Exists(fileLocation))
         {
-            throw new FileNotFoundException("The specified file does not exist.", fileLocation);
+            return "Error: The specified file does not exist.";
         }
 
         var lines = await File.ReadAllLinesAsync(fileLocation);
@@ -76,6 +86,8 @@ public class TextEditorPlugin
         }
 
         await File.WriteAllTextAsync(fileLocation, outputBuilder.ToString());
+
+        return $"File content inserted at line {line} in {path}.";
     }
 
     [KernelFunction("replace_text")]
@@ -84,12 +96,18 @@ public class TextEditorPlugin
         Use this tool to replace a piece of text in an existing file with new text. Make sure the 
         old text is unique in the file to avoid unintended replacements.
         """)]
-    public async Task ReplaceText(
+    public async Task<string> ReplaceText(
         [Description("Path to the existing file")] string path,
         [Description("The original text to replace in the file")] string oldText,
         [Description("The new text to replace the old text with")] string newText)
     {
         var fileLocation = FileLocation.Resolve(path);
+
+        if (!File.Exists(fileLocation))
+        {
+            return "Error: The specified file does not exist.";
+        }
+        
         var fileContent = await File.ReadAllTextAsync(fileLocation);
 
         var matchPattern = new Regex(oldText, RegexOptions.Multiline);
@@ -105,5 +123,7 @@ public class TextEditorPlugin
         var updatedContent = matchPattern.Replace(fileContent, newText);
 
         await File.WriteAllTextAsync(fileLocation, updatedContent);
+        
+        return "Text content replaced successfully.";
     }
 }
