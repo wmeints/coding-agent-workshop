@@ -1,11 +1,15 @@
 ---
-title: Overview
+title: Using MCP servers in the coding agent
 description: Provides an overview of the Model Context Protocol (MCP) and how to integrate MCP servers into your coding agent.
 ---
 
 import { Card } from '@astrojs/starlight/components';
 import CaptionedImage from '../../../../components/CaptionedImage.astro';
 import agentArchitectureStep4 from '../../../../assets/agent-architecture-step-4.png';
+
+While the basic tools we built in the previous module provide a great basis you
+will find that the agent isn't going to talk to Github or other important
+developers tools without a little help.
 
 In this module, we'll learn how to extend the coding agent with MCP servers to
 provide additional capabilities and context. By the end of the module you'll know:
@@ -52,45 +56,44 @@ to the LLM without hardcoding each integration.
 
 When your agent connects to an MCP server, it can:
 
-1. **Discover available tools** - The server advertises what tools it provides
-2. **Execute tools** - The agent can call these tools and receive structured responses
-3. **Access resources** - Some servers provide access to data or context
-4. **Handle prompts** - Servers can provide specialized prompts for specific tasks
+1. Discover available tools - The server advertises what tools it provides
+2. Execute tools - The agent can call these tools and receive structured responses
+3. Access resources - Some servers provide access to data or context
+4. Handle prompts - Servers can provide specialized prompts for specific tasks
 
-The agent acts as an MCP client, maintaining connections to one or more MCP servers
-throughout its lifecycle. When the LLM decides to use a tool provided by an MCP
-server, your agent orchestrates the communication between the LLM and the server.
+The agent can act as an MCP client, maintaining connections to one or more MCP
+servers throughout its lifecycle. When the LLM decides to use a tool provided by
+an MCP server, your agent orchestrates the communication between the LLM and the
+server.
 
 ## Security considerations
 
 When working with MCP servers, security is paramount. Here are key considerations:
 
-**Trust boundaries:** MCP servers run as separate processes and can execute arbitrary
-code. Only use MCP servers from trusted sources, and review the code if possible
-before deploying them.
+**Trust boundaries:** MCP servers run as separate processes and can execute
+arbitrary code. Only use MCP servers from trusted sources, and review the code
+if possible before deploying them.
 
-**Sandboxing:** Consider running MCP servers in isolated environments or containers
-to limit the potential damage if a server is compromised or misbehaves.
+**Sandboxing:** Consider running MCP servers in isolated environments or
+containers to limit the potential damage if a server is compromised or
+misbehaves.
 
-**Configuration security:** MCP servers often require configuration like API keys,
-connection strings, or credentials. Store these securely and never commit them to
-version control. Use environment variables or secure configuration stores.
+**Configuration security:** MCP servers often require configuration like API
+keys, connection strings, or credentials. Store these securely and never commit
+them to version control. Use environment variables or secure configuration
+stores.
 
 **Input validation:** Even though MCP is a structured protocol, always validate
-inputs and outputs. Don't assume that a server will always return well-formed data.
+inputs and outputs. Don't assume that a server will always return well-formed
+data.
 
-**Network security:** If MCP servers communicate over the network, ensure connections
-are encrypted and authenticated. The MCP protocol supports both local stdio-based
-communication and remote connections.
+**Network security:** If MCP servers communicate over the network, ensure
+connections are encrypted and authenticated. The MCP protocol supports both
+local stdio-based communication and remote connections.
 
-**User permissions:** Consider what permissions your agent should have when calling
-MCP servers. Not all users should have access to all servers or all tools within
-a server.
-
-<Card title="Security Best Practices">
-Always review MCP server configurations and only enable servers that are necessary
-for your use case. Start with minimal permissions and add more as needed.
-</Card>
+**User permissions:** Consider what permissions your agent should have when
+calling MCP servers. Not all users should have access to all servers or all
+tools within a server.
 
 ## Basic structure of an MCP server in .NET
 
@@ -130,11 +133,12 @@ public async Task<ToolResult> SearchDocumentation(
 }
 ```
 
-**Resource providers:** Some servers expose resources (like files or data) that the
-agent can access.
+**Resource providers:** Some servers expose resources (like files or data) that
+the agent can access.
 
-**Transport layer:** MCP servers can communicate via stdio (standard input/output) or
-over network protocols. The stdio approach is common for locally installed servers.
+**Transport layer:** MCP servers can communicate via stdio (standard
+input/output) or over network protocols. The stdio approach is common for
+locally installed servers.
 
 ### Server lifecycle
 
