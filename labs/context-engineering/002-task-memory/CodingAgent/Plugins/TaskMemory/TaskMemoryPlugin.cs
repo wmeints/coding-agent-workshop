@@ -20,17 +20,17 @@ public class TaskMemoryPlugin
         
         How to use this tool:
         
-        - Mark tasks as 'InProgress' when you start working on them.
-        - Mark tasks as 'Completed' immediately after you finish them.
+        - Mark tasks as 'in_progress' when you start working on them.
+        - Mark tasks as 'completed' immediately after you finish them.
         - Remove completed tasks from the list to keep it clean.
         - Only work on one task at a time to maintain focus.
-        - Important: When you create a TODO list, the first task is set to `InProgress` immediately.
+        - IMPORTANT: When you create a TODO list, the first task is set to `in_progress` immediately.
+        - IMPORTANT: Mark TODO items IMMEDIATELY as completed after finishing a task.
         
-        Task completion requirements are:
+        Task completion requirements:
         
         - Each task must be fully completed before moving on to the next.
-        - If you run in to blockers or need more information, keep the task `InProgress` and ask the user for help.
-        - Do not mark a task as `Completed` if there are any remaining issues.
+        - Do not mark a task as `completed` if there are any remaining issues.
         
         Task break down guidelines:
         
