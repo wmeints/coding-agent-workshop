@@ -5,13 +5,17 @@ namespace CodingAgent.Configuration;
 
 public class McpServerConfigurationItem
 {
-    [JsonPropertyName("url")] public string? Url { get; set; }
+    [JsonPropertyName("url")] 
+    public string? Url { get; set; }
 
-    [JsonPropertyName("command")] public string? Command { get; set; }
+    [JsonPropertyName("command")] 
+    public string? Command { get; set; }
 
-    [JsonPropertyName("args")] public List<string>? Arguments { get; set; }
+    [JsonPropertyName("args")] 
+    public List<string>? Arguments { get; set; }
 
-    [JsonPropertyName("env")] public Dictionary<string, string?>? EnvironmentVariables { get; set; }
+    [JsonPropertyName("env")] 
+    public Dictionary<string, string?>? EnvironmentVariables { get; set; }
 
     public async Task<McpClient> CreateClientAsync()
     {
