@@ -1,6 +1,8 @@
 ---
 title: Building the Text Editor Plugin
 description: This tutorial teaches you how to build a Text Editor Plugin for the coding agent.
+next:
+    label: Context engineering
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
@@ -25,8 +27,8 @@ Let's get started building the plugin class first.
 
 ## Lab files
 
-- **Starter:** [labs/tools/002-shell-plugin](/labs/tools/002-shell-plugin)
-- **Solution:** [labs/tools/003-text-editor-plugin](/labs/tools/003-text-editor-plugin)
+- **Starter:** [labs/tools/002-shell-plugin][LAB_START_SOURCE]
+- **Solution:** [labs/tools/003-text-editor-plugin][LAB_SOLUTION_SOURCE]
 
 ## Create the FileLocation helper class
 
@@ -395,4 +397,7 @@ platform-specific aliased path resolution.
 With this text editor plugin, our agent can now edit files in a more controlled
 and predictable way, making it more reliable for code modification tasks.
 
-**Solution:** [labs/tools/003-text-editor-plugin](/labs/tools/003-text-editor-plugin)
+You can find the solution for the lab here: [labs/tools/003-text-editor-plugin][LAB_SOLUTION_SOURCE]
+
+[LAB_START_SOURCE]: https://github.com/wmeints/coding-agent-workshop/tree/main/labs/tools/002-shell-plugin
+[LAB_SOLUTION_SOURCE]: https://github.com/wmeints/coding-agent-workshop/tree/main/labs/tools/003-text-editor-plugin

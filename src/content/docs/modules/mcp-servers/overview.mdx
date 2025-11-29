@@ -1,13 +1,13 @@
 ---
-title: Using MCP servers in the coding agent
+title: Overview
 description: Provides an overview of the Model Context Protocol (MCP) and how to integrate MCP servers into your coding agent.
 ---
 
-import { Card } from '@astrojs/starlight/components';
+import { Card, Aside } from '@astrojs/starlight/components';
 import CaptionedImage from '../../../../components/CaptionedImage.astro';
 import agentArchitectureStep4 from '../../../../assets/agent-architecture-step-4.png';
 
-While the basic tools we built in the previous module provide a great basis you
+While the basic tools we built in the previous module provide a great basis, you
 will find that the agent isn't going to talk to Github or other important
 developers tools without a little help.
 
@@ -25,12 +25,17 @@ provide additional capabilities and context. By the end of the module you'll kno
 
 The Model Context Protocol (MCP) is a standardized protocol designed to facilitate
 communication between AI models and external services. It provides a structured way
-to exchange context, data, and capabilities between your agent and specialized servers.
+to extend agents with resources, custom prompts, and tools.
 
 Think of MCP servers as plugins that extend your agent's capabilities beyond what
 you build directly into your application. Instead of implementing every tool yourself,
 you can leverage MCP servers built by others or create specialized servers for
 specific domains.
+
+<Aside type="note">
+While the MCP protocol supports resources, and custom prompts in addition to tools,
+in this workshop we'll only focus on using MCP servers to provide extra tools.
+</Aside>
 
 ### Value for coding agents
 
@@ -154,9 +159,9 @@ For detailed information on building MCP servers in .NET, refer to the
 
 In the next sections, we'll extend your coding agent to support MCP servers:
 
-1. [Extending the application with MCP server support](/modules/mcp-servers/extending-with-mcp-servers) -
+1. [Configuring MCP servers](/modules/mcp-servers/configuring-mcp-servers) -
    Configure your agent to load and connect to MCP servers via a configuration file.
-2. [Integrating MCP servers in the agent loop](/modules/mcp-servers/integrating-mcp-servers) -
-   Update the core agent loop to discover and use tools from MCP servers.
+2. [Integrating MCP servers as tools](/modules/mcp-servers/integrating-mcp-servers-as-tools) -
+   Update the agent to use the configured MCP servers as tool providers.
 
 Let's get started by adding MCP server support to the application!

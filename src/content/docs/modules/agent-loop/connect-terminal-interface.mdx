@@ -15,8 +15,8 @@ agent to report progress and results to the user in the terminal.
 
 ## Lab files
 
-- **Starter:** [labs/agent-loop/002-main-agent-loop](/labs/agent-loop/002-main-agent-loop)
-- **Solution:** [labs/agent-loop/003-agent-interface](/labs/agent-loop/003-agent-interface)
+- **Starter:** [labs/agent-loop/002-main-agent-loop][LAB_START_SOURCE]
+- **Solution:** [labs/agent-loop/003-agent-interface][LAB_SOLUTION_SOURCE]
 
 ## Define callback methods
 
@@ -237,7 +237,8 @@ In this lab, we connected the agent loop to a terminal interface using callbacks
 We implemented two types of callbacks:
 
 1. **Function call reporting** - Shows when the agent invokes tools
-2. **Intermediate response reporting** - Shows agent responses that don't involve tool calls
+2. **Intermediate response reporting** - Shows agent responses that don't
+   involve tool calls
 
 These callbacks make the agent much more transparent and user-friendly, allowing
 users to see exactly what the agent is doing at each step of the process.
@@ -247,7 +248,10 @@ other interfaces, such as a web UI or logging system, without changing the core
 agent logic.
 
 Please find the final solution for the lab here:
-[labs/agent-loop/003-agent-interface](/labs/agent-loop/003-agent-interface)
+[labs/agent-loop/003-agent-interface][LAB_SOLUTION_SOURCE].
 
-In the next lab, we'll work on proper unit-tests for the agent so you don't need to
-manually verify its behavior each time you make a change.
+In the next lab, we'll work on proper unit-tests for the agent so you don't need
+to manually verify its behavior each time you make a change.
+
+[LAB_START_SOURCE]: https://github.com/wmeints/coding-agent-workshop/tree/main/labs/agent-loop/002-main-agent-loop
+[LAB_SOLUTION_SOURCE]: https://github.com/wmeints/coding-agent-workshop/tree/main/labs/agent-loop/003-agent-interface
