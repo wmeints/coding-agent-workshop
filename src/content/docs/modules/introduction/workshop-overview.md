@@ -3,8 +3,8 @@ title: Workshop overview
 description: Information about the structure of the workshop
 ---
 
-In this workshop we cover most of the basics needed to build your own 
-coding agent. The workshop contains 5 modules that will help you build the
+In this workshop we cover most of the basics needed to build your own
+coding agent. The workshop contains 4 modules that will help you build the
 various pieces of your coding agent.
 
 ## Workshop modules
@@ -24,13 +24,9 @@ This workshop covers the following topics:
    Semantic Kernel and how to use tools in your agent. By the end of the module
    your agent can read and write code and you'll know how this works.
 
-4. **Task memory:** Helps you understand why agents sometimes don't do the things
-   you expect them to do. You'll also learn how to help your agent by providing
-   short-term task memory so it can create and update its own plan.
-
-5. **MCP servers:** In this final module, you'll learn how to extend your agent
-   with MCP servers and how to protect yourself against abuse by building tool
-   permissions into your agent.
+4. **Task memory:** In this final module, you'll learn why agents sometimes don't
+   do the things you expect them to do. You'll also learn how to help your agent
+   by providing short-term task memory so it can create and update its own plan.
 
 ## Structure of the workshop
 

@@ -31,11 +31,8 @@ how LLMs work ahead of time. I'll explain in the workshop.
 - **Module 3: Giving the agent tools to work with:** This module covers how to build the
   necessary plugins and tools for the agent to be able to edit code.
 
-- **Module 4: Adding task memory:** In this module we'll look at adding task memory and
+- **Module 4: Adding task memory:** In the final module, we'll look at adding task memory and
   how to get debugging information from the agent using opentelemetry.
-
-- **Module 5: Including support for MCP servers:** In the final module, we'll look at
-  using MCP servers to extend the functionality of the coding agent.
 
 ## Contributing to this workshop
 
