@@ -153,14 +153,15 @@
 
 .marp-slides-container:fullscreen .marp-slides-wrapper,
 .marp-slides-container.is-fullscreen .marp-slides-wrapper {
+    position: relative;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     height: 100vh;
 }
 
 .marp-slides-container:fullscreen .marp-slides,
 .marp-slides-container.is-fullscreen .marp-slides {
-    flex: 1;
     aspect-ratio: auto;
     display: flex;
     align-items: center;
@@ -169,7 +170,7 @@
 
 .marp-slides-container:fullscreen .marp-slide,
 .marp-slides-container.is-fullscreen .marp-slide {
-    width: max(1280px, 80vw);
+    width: max(1280px, 65vw);
     height: auto;
     max-width: 100%;
     max-height: 100%;
@@ -203,7 +204,11 @@
 
 .marp-slides-container:fullscreen .marp-controls,
 .marp-slides-container.is-fullscreen .marp-controls {
-    background-color: var(--sl-color-black);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* background-color: rgba(0, 0, 0, 0.8); */
     border-top-color: var(--sl-color-gray-6);
     padding: 1rem;
 }
@@ -216,4 +221,25 @@
 .marp-slides-container:fullscreen .marp-fullscreen .icon-compress,
 .marp-slides-container.is-fullscreen .marp-fullscreen .icon-compress {
     display: block;
+}
+
+/* Mermaid diagrams in slides */
+.marp-slide .mermaid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.marp-slide .mermaid svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.marp-slide .mermaid-error {
+    color: var(--sl-color-red);
+    background-color: var(--sl-color-red-low);
+    padding: 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
 }

@@ -17,12 +17,25 @@ const allSlides = import.meta.glob('../slides/*.md', {
 
 // Find the matching slide file
 const slidePath = `../slides/${moduleName}.md`;
-const slideContent = allSlides[slidePath] as string | undefined;
+let slideContent = allSlides[slidePath] as string | undefined;
 
 let slidesHtml: string[] = [];
 let slidesCss = '';
 
 if (slideContent) {
+  // Pre-process mermaid code blocks - convert them to HTML divs that mermaid can render
+  // This preserves the mermaid content through Marp's processing
+  // Handle both Unix (\n) and Windows (\r\n) line endings
+  let mermaidCounter = 0;
+  slideContent = slideContent.replace(
+    /```mermaid\s*\r?\n([\s\S]*?)```/g,
+    (_, diagramContent) => {
+      mermaidCounter++;
+      // Use HTML that Marp will pass through (since html: true)
+      return `<div class="mermaid" data-mermaid-id="${mermaidCounter}">\n${diagramContent.trim()}\n</div>`;
+    }
+  );
+
   const marp = new Marp({
     html: true,
     emoji: {
@@ -90,6 +103,36 @@ const hasSlides = slidesHtml.length > 0;
 )}
 
 <script>
+  import mermaid from 'mermaid';
+
+  // Initialize mermaid with configuration
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose',
+    fontFamily: 'inherit',
+  });
+
+  async function initMermaidDiagrams() {
+    const mermaidElements = document.querySelectorAll('.marp-slides-container .mermaid');
+
+    for (const element of mermaidElements) {
+      const id = element.getAttribute('data-mermaid-id') || Math.random().toString(36).substr(2, 9);
+      const graphDefinition = element.textContent || '';
+
+      if (graphDefinition.trim()) {
+        try {
+          const { svg } = await mermaid.render(`mermaid-${id}`, graphDefinition);
+          element.innerHTML = svg;
+          element.classList.add('mermaid-rendered');
+        } catch (err) {
+          console.error('Mermaid rendering error:', err);
+          element.innerHTML = `<pre class="mermaid-error">Error rendering diagram: ${err}</pre>`;
+        }
+      }
+    }
+  }
+
   function initSlideNavigation() {
     const containers = document.querySelectorAll('.marp-slides-container');
 
@@ -157,9 +200,14 @@ const hasSlides = slidesHtml.length > 0;
     });
   }
 
+  async function init() {
+    initSlideNavigation();
+    await initMermaidDiagrams();
+  }
+
   // Initialize on page load
-  initSlideNavigation();
+  init();
 
   // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initSlideNavigation);
+  document.addEventListener('astro:page-load', init);
 </script>

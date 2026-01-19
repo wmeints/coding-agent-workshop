@@ -21,24 +21,26 @@ Building the core of your coding agent
 
 ## Agent Architecture
 
-The `CodingAgent` class is the heart of our system
-
-Key components:
-- **Agent Loop**: The continuous cycle of receiving input, processing, and responding
-- **IAgentCallbacks**: Interface for sending information back to the user
-- **Plugins**: Extensible tools the agent can use
+![Agent Architecture](/images/agent-architecture-overview.png)
 
 ---
 
 ## The Agent Loop Pattern
 
-```
-User Input -> Process with LLM -> Execute Tools -> Return Response
-     ^                                                    |
-     |____________________________________________________|
-```
+```mermaid
+flowchart LR
+    S@{ shape: start }
+    P[User input]
+    L[LLM]
+    E@{ shape: stop, label: "End" }
+    T[Process tool calls]
 
-The loop continues until the task is complete
+    S --> P
+    P --> L 
+    L .-> T
+    L .-> E
+    T --> L
+```
 
 ---
 

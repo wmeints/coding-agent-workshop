@@ -32,12 +32,12 @@ An AI agent is a system that can:
 
 ## Agents vs. Chatbots
 
-| Chatbot | Agent |
-|---------|-------|
-| Responds to queries | Takes autonomous action |
+| Chatbot                  | Agent                     |
+| ------------------------ | ------------------------- |
+| Responds to queries      | Takes autonomous action   |
 | Single-turn interactions | Multi-step task execution |
-| No tools | Uses tools to interact |
-| Stateless | Maintains context |
+| No tools                 | Uses tools to interact    |
+| Stateless                | Maintains context         |
 
 ---
 
@@ -55,10 +55,13 @@ Key features:
 
 ## Core Concepts
 
-- **Kernel**: The central orchestrator
-- **Plugins**: Collections of functions
-- **Functions**: Individual capabilities
-- **Connectors**: AI service integrations
+![Semantic Kernel Architecture](/images/semantic-kernel-architecture.png)
+
+---
+
+## Kernel Interactions
+
+![Semantic Kernel Interactions](/images/semantic-kernel-interactions.png)
 
 ---
 
