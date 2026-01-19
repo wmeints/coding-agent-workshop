@@ -1,13 +1,25 @@
 ---
-title: Finished
+title: Extending your agent further
 description: You've succesfully completed the workshop.
 ---
+import { Aside } from '@astrojs/starlight/components';
 
 Thank you for completing this workshop! You've built a functional coding agent with Semantic Kernel and learned the fundamentals of agent development. You now have a solid foundation to continue building and improving your agent.
 
-## Ideas for Expanding Your Agent
-
 Your agent is functional, but there are many ways to make it even more powerful and useful. Here are some ideas to explore:
+
+### MCP servers
+
+The Model Context Protocol is a way for your agent to communicate with external tools through a standardized method.
+MCP servers come in many shapes and sizes, for example you can connect to Github through the MCP protocol, but you can also use the Playwright MCP server to control your local browser.
+
+If you're interested in learning more about using MCP servers, take a look at these resources:
+
+<Aside type="tip" title="Give it a try">
+    See if you can extend the agent to load MCP servers. First, read [this article](https://devblogs.microsoft.com/semantic-kernel/integrating-model-context-protocol-tools-with-semantic-kernel-a-step-by-step-guide/)
+    over on the Semantic Kernel Blog. Then allow the user to load MCP servers 
+    from `.mcp.config.json` in the current working directory
+</Aside>
 
 ### Custom Prompts
 
@@ -19,6 +31,12 @@ Add support for custom prompts to give users more control over how the agent beh
 
 This gives your agent more flexibility and allows it to adapt to different use cases and preferences.
 
+<Aside type="tip" title="Give it a try">
+See if you can mimic custom prompts as they're implemented in Github Copilot.
+Allow the user to create `.github/prompts/<prompt-name>.md` files. The agent should
+support `/<prompt-name>` to run the prompt.
+</Aside>
+
 ### Glob-Based Custom Instructions
 
 Expand your custom instructions feature to support file-specific guidance:
@@ -28,6 +46,12 @@ Expand your custom instructions feature to support file-specific guidance:
 - Allow inheritance of instructions from broader to more specific patterns
 
 For example, you could have one set of instructions for all C# files, and more specific instructions for test files or API controllers.
+
+<Aside type="tip" title="Give it a try">
+    See if you can master the context of the agent with support for hierarchical 
+    AGENTS.md files. Make sure to detect which instruction files to load depending
+    on which directories the agent is accessing with tools.
+</Aside>
 
 ### Tool Permission System
 
@@ -40,8 +64,17 @@ Improve the security and control of your agent by implementing a permission syst
 
 This is especially important for operations that modify files, execute system commands, or interact with external services.
 
+### Or maybe fix a few limitations
+
+At this point, the agent isn't fully on-par with what you can find in commercial offerings. There are a few limitations I've not fixed in the workshop:
+
+- The context isn't automatically compacted. You can do this though, by using the [ChatHistoryReducer](https://github.com/microsoft/semantic-kernel/tree/main/dotnet/samples/Concepts/ChatCompletion/ChatHistoryReducers) components.
+- We don't store chat history on disk, but you can certainly serialize the ChatHistory object and load it back in. See if you can fix this for me!
+
 ## Continue Building
 
 These are just starting points—the possibilities for expanding your agent are endless. Consider what would make your agent most useful for your specific workflow and start experimenting!
+
+Since you're here anyway, give it a try. I'm happy to help out with any questions you may have!
 
 Ready to learn more? Check out the [Next Steps](/modules/conclusion/next-steps) page for additional resources and learning materials.
