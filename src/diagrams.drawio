@@ -1,4 +1,45 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.8" pages="5">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.3.2" pages="6">
+  <diagram name="Overview" id="6K799svpVednF741gs6e">
+    <mxGraphModel dx="2946" dy="1137" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-0" />
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-1" parent="k3GB-8SjS5EIaqKWzFit-0" />
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-2" parent="k3GB-8SjS5EIaqKWzFit-1" style="rounded=0;whiteSpace=wrap;html=1;" value="Terminal interface" vertex="1">
+          <mxGeometry height="60" width="120" x="350" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-3" edge="1" parent="k3GB-8SjS5EIaqKWzFit-1" source="k3GB-8SjS5EIaqKWzFit-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="k3GB-8SjS5EIaqKWzFit-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-4" edge="1" parent="k3GB-8SjS5EIaqKWzFit-1" source="k3GB-8SjS5EIaqKWzFit-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="k3GB-8SjS5EIaqKWzFit-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-5" edge="1" parent="k3GB-8SjS5EIaqKWzFit-1" source="k3GB-8SjS5EIaqKWzFit-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k3GB-8SjS5EIaqKWzFit-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-6" edge="1" parent="k3GB-8SjS5EIaqKWzFit-1" source="k3GB-8SjS5EIaqKWzFit-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="k3GB-8SjS5EIaqKWzFit-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-7" edge="1" parent="k3GB-8SjS5EIaqKWzFit-1" source="k3GB-8SjS5EIaqKWzFit-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="k3GB-8SjS5EIaqKWzFit-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-9" parent="k3GB-8SjS5EIaqKWzFit-1" style="rounded=0;whiteSpace=wrap;html=1;" value="CodingAgent" vertex="1">
+          <mxGeometry height="60" width="120" x="350" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-10" parent="k3GB-8SjS5EIaqKWzFit-1" style="rounded=0;whiteSpace=wrap;html=1;" value="AgentInstructions" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-11" parent="k3GB-8SjS5EIaqKWzFit-1" style="rounded=0;whiteSpace=wrap;html=1;" value="ShellPlugin" vertex="1">
+          <mxGeometry height="60" width="120" x="350" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-12" parent="k3GB-8SjS5EIaqKWzFit-1" style="rounded=0;whiteSpace=wrap;html=1;" value="TextEditorPlugin" vertex="1">
+          <mxGeometry height="60" width="120" x="500" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="k3GB-8SjS5EIaqKWzFit-13" parent="k3GB-8SjS5EIaqKWzFit-1" style="rounded=0;whiteSpace=wrap;html=1;" value="TaskMemoryPlugin" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="380" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
   <diagram name="Step 1" id="w6o3ThdgBnDysbvFrffI">
     <mxGraphModel dx="2946" dy="1159" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
