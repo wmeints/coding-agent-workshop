@@ -95,14 +95,6 @@ export default defineConfig({
 					]
 				},
 				{
-					label: "MCP Servers",
-					items: [
-						{ label: "Overview", slug: "modules/mcp-servers/overview" },
-						{ label: "Configuring MCP servers", slug: "modules/mcp-servers/configuring-mcp-servers" },
-						{ label: "Integrating MCP servers as tools", slug: "modules/mcp-servers/integrating-mcp-servers-as-tools" },
-					]
-				},
-				{
 					label: "Conclusion",
 					items: [
 						{ label: "Finished!", slug: "modules/conclusion/finished" },
