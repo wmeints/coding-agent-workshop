@@ -484,7 +484,7 @@ response scenarios correctly.
         var agentCallbacks = new Mock<IAgentCallbacks>();
         var chatCompletionService = new Mock<IChatCompletionService>();
         var kernel = TestObjectFactory.CreateTestKernel(chatCompletionService.Object);
-        var agent = new Agent(kernel, new AgentInstructions());
+        var agent = new Agent(kernel, new AgentInstructions(kernel));
     }
     ```
 
