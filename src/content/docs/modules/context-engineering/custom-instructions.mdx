@@ -281,13 +281,12 @@ you need to add tests for the new functionality.
 
    ```csharp title="AgentInstructionsTests.cs"
    [Fact]
-   public void Remove_WithCustomInstructions_ShouldRemoveSystemAndDeveloperMessages()
+   public void Remove_WithoutCustomInstructions_ShouldRemoveOnlySystemMessage()
    {
       // Arrange
       var agentInstructions = new AgentInstructions();
       var chatHistory = new ChatHistory();
       chatHistory.Add(new ChatMessageContent(AuthorRole.System, "System prompt"));
-      chatHistory.Add(new ChatMessageContent(AuthorRole.Developer, "Custom instructions"));
       chatHistory.Add(new ChatMessageContent(AuthorRole.User, "User message"));
 
       // Act
