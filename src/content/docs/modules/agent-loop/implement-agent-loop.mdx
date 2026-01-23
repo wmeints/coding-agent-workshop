@@ -500,7 +500,7 @@ Let's add logic to instruct the agent to behave more like a developer.
 1. Modify the `InvokeAsync` method in the `Agent` class to inject and
    remove the instructions.
 
-   ```csharp title="Agent.cs" ins={6,42}
+   ```csharp title="Agent.cs" ins={6,38}
    public async Task InvokeAsync(string prompt, IAgentCallbacks callbacks)
    {
       var iterations = 0;
@@ -508,7 +508,6 @@ Let's add logic to instruct the agent to behave more like a developer.
 
       await _agentInstructions.InjectAsync(_chatHistory);
       _chatHistory.AddUserMessage(prompt);
-      _sharedToolsPlugin.Reset();
 
       while (true)
       {
@@ -531,15 +530,12 @@ Let's add logic to instruct the agent to behave more like a developer.
 
          var functionCalls = FunctionCallContent.GetFunctionCalls(response).ToList();
 
-         if (functionCalls.Any())
+         if (!functionCalls.Any())
          {
-         await HandleFunctionCalls(functionCalls);
-
-         if (_sharedToolsPlugin.TaskCompleted)
-               {
-                  break;
-               }
+            break;
          }
+
+         await HandleFunctionCalls(functionCalls);
       }
    
       _agentInstructions.Remove(_chatHistory);
