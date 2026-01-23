@@ -118,7 +118,7 @@ var builder = Kernel.CreateBuilder();
 
 // Add an AI service (example with Azure OpenAI)
 builder.AddAzureOpenAIChatCompletion(
-    modelId: "your-model-id",
+    deploymentName: "your-model-id",
     endpoint: "your-endpoint",
     apiKey: "your-api-key"
 );
