@@ -288,7 +288,6 @@ for the `InvokeAsync` method.
       var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
       _chatHistory.AddUserMessage(prompt);
-      _sharedToolsPlugin.Reset();
 
       while (true)
       {
