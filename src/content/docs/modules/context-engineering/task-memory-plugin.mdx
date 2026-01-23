@@ -152,7 +152,7 @@ public class TaskMemoryPlugin
 }
 ```
 
-It's okay if your subscription is shorter than the one shown above. The key is to
+It's okay if your description is shorter than the one shown above. The key is to
 provide clear instructions. You may need to tweak the wording based on how well
 the agent follows the instructions during testing.
 
@@ -187,17 +187,17 @@ introducing custom formatting.
 
 <Steps>
 1. Open the `ConsoleCallbacks.cs` file
-2. In the `OnFunctionInvokedAsync` method, add a new case to handle the
+2. In the `ReportFunctionCallAsync` method, add a new case to handle the
    `write_todos` function:
    ```csharp
    if(functionName == "write_todos")
    {
-      ReportWriteTodosInvocation(JsonSerializer.Deserialize<List<TodoItem>>(arguments["todos"]));
-      return;
+      ReportTodoItemListCall(JsonSerializer.Deserialize<List<TodoItem>>(arguments!["todos"].ToString()));
+      return Task.CompletedTask;
    }
    ```
 
-3. Implement the `ReportWriteTodosInvocation` method to format and display the
+3. Implement the `ReportTodoItemListCall` method to format and display the
    TODO items using `Spectre.Console` markup.
 
 </Steps>
