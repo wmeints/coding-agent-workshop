@@ -21,7 +21,7 @@ You'll need the following software on your computer:
 
 - Windows, Mac, or Linux
 - [Podman](https://podman.io) or [Docker](https://www.docker.com/products/docker-desktop/)
-- [.NET 9 SDK](https://dot.net)
+- [.NET 10 SDK](https://dot.net)
 - [Visual Studio Code](https://code.visualstudio.com/), [Visual Studio](https://visualstudio.microsoft.com/), or [Rider](https://www.jetbrains.com/rider/)
 
 ## Download the sources
