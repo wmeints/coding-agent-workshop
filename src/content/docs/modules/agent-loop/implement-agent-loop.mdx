@@ -259,7 +259,7 @@ for the `InvokeAsync` method.
          };
 
          var response = await chatCompletionService
-               .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+               .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings, _kernel);
 
          _chatHistory.Add(response);
       }
@@ -304,7 +304,7 @@ for the `InvokeAsync` method.
          };
 
          var response = await chatCompletionService
-            .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+            .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings, _kernel);
 
          _chatHistory.Add(response);
 
@@ -524,7 +524,7 @@ Let's add logic to instruct the agent to behave more like a developer.
          };
 
          var response = await chatCompletionService
-            .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+            .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings, _kernel);
 
          _chatHistory.Add(response);
 

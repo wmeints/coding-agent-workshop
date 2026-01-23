@@ -232,7 +232,7 @@ template with template variables for the operating system and working directory.
             };
 
             var response = await chatCompletionService.GetChatMessageContentAsync(
-               _chatHistory, promptExecutionSettings);
+               _chatHistory, promptExecutionSettings, _kernel);
 
             _chatHistory.Add(response);
 
