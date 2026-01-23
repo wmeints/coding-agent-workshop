@@ -135,6 +135,16 @@ template with template variables for the operating system and working directory.
 1. Add a reference to the `Microsoft.SemanticKernel.PromptTemplates.Handlebars`
    NuGet package to your project.
 
+1. Update the `AgentSystemInstructions.txt` embedded resource to include
+   template variables for the operating system and working directory.
+
+   ```handlebars title="Resources/AgentSystemInstructions.txt"
+   You're a coding agent built by Bitbash. Your task is to help the developer solve programming tasks.
+
+   Operating system: {{operating_system}}
+   Current working directory: {{working_directory}}
+   ```
+
 1. Update the `IAgentInstructions` interface to accept an `AgentContext`
    parameter in the `InjectAsync` method.
 
