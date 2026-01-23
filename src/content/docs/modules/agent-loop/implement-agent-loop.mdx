@@ -454,7 +454,7 @@ Let's add logic to instruct the agent to behave more like a developer.
    The `Remove` method checks if the first message in the chat history is a
    system message and removes it if so.
 
-1. Download [SystemInstructions.txt][AGENT_INSTRUCTIONS] and place it in the `Resources`
+1. Download [AgentSystemInstructions.txt][AGENT_INSTRUCTIONS] and place it in the `Resources`
    folder in the `CodingAgent` project. Make sure to set the file's build action to
    `Embedded Resource` in the file properties.
 
@@ -464,7 +464,7 @@ Let's add logic to instruct the agent to behave more like a developer.
    ```csharp title="AgentInstructions.cs" ins={30-38}
    private async Task<string> ReadSystemInstructionsAsync()
    {
-      var resourceName = "CodingAgent.Resources.SystemInstructions.txt";
+      var resourceName = "CodingAgent.Resources.AgentSystemInstructions.txt";
       var instructions = EmbeddedResource.Read(resourceName);
 
       return await Task.FromResult(instructions);
@@ -525,7 +525,7 @@ Let's add logic to instruct the agent to behave more like a developer.
          };
 
          var response = await chatCompletionService
-         .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
+            .GetChatMessageContentAsync(_chatHistory, promptExecutionSettings);
 
          _chatHistory.Add(response);
 
@@ -608,6 +608,6 @@ Right now, the agent doesn't talk too much. We'll fix that in the next module wh
 implement callbacks to report progress to the user.
 
 [SK_SERVICES]: https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/
-[AGENT_INSTRUCTIONS]: https://raw.githubusercontent.com/wmeints/coding-agent-workshop/refs/heads/main/labs/agent-loop/002-agent-interface/CodingAgent/Resources/AgentSystemInstructions.txt
+[AGENT_INSTRUCTIONS]: https://raw.githubusercontent.com/wmeints/coding-agent-workshop/refs/heads/main/labs/agent-loop/002-main-agent-loop/CodingAgent/Resources/AgentSystemInstructions.txt
 [LAB_START_SOURCE]: https://github.com/wmeints/coding-agent-workshop/tree/main/labs/agent-loop/001-setup-application
 [LAB_SOLUTION_SOURCE]: https://github.com/wmeints/coding-agent-workshop/tree/main/labs/agent-loop/002-main-agent-loop
